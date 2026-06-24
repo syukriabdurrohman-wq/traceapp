@@ -1,0 +1,140 @@
+DOKUMENTASI TEKNIS PROJECT TRACE
+(Tracking Report & Activity Control Engine)
+Versi: 26 April 2026
+
+Dokumen ini merupakan panduan developer dan referensi teknis utama untuk arsitektur, tumpukan teknologi (tech stack), dan alur data pada Project TRACE.
+
+========================================================================
+1. TECH STACK & DEPENDENCIES
+========================================================================
+
+Proyek ini dibangun menggunakan ekosistem PHP dengan pendekatan arsitektur terstruktur untuk memfasilitasi skalabilitas.
+
+- Backend: PHP 8.2 (Dipilih karena stabilitas, performa, dan dukungan strict typing).
+- Framework: CodeIgniter 4 (CI4). Digunakan untuk manajemen routing, controller, model, validasi, dan fitur keamanan bawaan.
+- Database: MySQL / MariaDB. Basis data relasional yang sesuai untuk struktur data transaksi dan laporan terhubung.
+- Frontend: HTML, CSS, Vanilla JavaScript. Dioptimalkan dengan pendekatan mobile-first agar ringan dan responsif.
+- PDF Generator: Dompdf. Library untuk merender format HTML menjadi dokumen PDF.
+- API Token: JWT (JSON Web Tokens). Digunakan untuk otentikasi endpoint API, access token, dan refresh token (persiapan integrasi eksternal atau aplikasi mobile native).
+- WhatsApp Gateway: Fonnte API. Digunakan untuk mengirim ringkasan laporan operasional secara otomatis ke WhatsApp.
+- PWA (Progressive Web App): Service Worker & Manifest.json. Memungkinkan aplikasi memiliki perilaku menyerupai native app, caching aset statis, dan instalasi via Add to Home Screen.
+
+========================================================================
+2. ARSITEKTUR SISTEM (DESIGN PATTERN)
+========================================================================
+
+Untuk mencegah penumpukan logika (fat controller), aplikasi ini mengimplementasikan pola Controller-Service-Model dengan alur kerja berikut:
+
+1. Route (app/Config/Routes.php): Titik masuk (entry point) yang menerima permintaan URL dari klien.
+2. Controller: Bertugas menerima request, memproses parameter input, dan mengembalikan Response (View atau JSON). Tidak memuat logika bisnis.
+3. Service: Lapisan pemrosesan utama. Seluruh kalkulasi, conditional logic, manipulasi data, dan manajemen upload file dieksekusi pada lapisan ini.
+4. Model: Fokus secara eksklusif pada kueri basis data (CRUD) dan pemetaan tabel.
+5. View / Response: Output antarmuka atau balasan data yang diterima oleh pengguna.
+
+========================================================================
+3. STRUKTUR DATABASE (SCHEMA CONCEPT)
+========================================================================
+
+Struktur data dinormalisasi dan dipecah ke dalam beberapa tabel untuk memudahkan pengelolaan per modul. Terdapat 3 kelompok data utama:
+
+A. Data Master (Referensi)
+- Users, Roles (Manajemen otorisasi dan hak akses).
+- WorkerCategories (Kategori tenaga kerja).
+- HeavyEquipmentCategories (Kategori alat berat).
+
+B. Data Transaksi (Inti Aplikasi)
+- DailyReports (Tabel header/induk laporan harian).
+- Tabel Detail/Child:
+  - ReportLocations
+  - ReportPhotos (Tabel relasi khusus attachment media)
+  - ReportWorkerUpdates
+  - ReportHeavyEquipmentUsages
+  - ReportMaterialSummaries
+  - ReportToolSummaries
+  - ReportObstacleSummaries
+  - ReportTomorrowPlans
+  - ReportOvertimes
+
+C. Data Security & System
+- UserSessions (Pencatatan sesi login aktif).
+- AuditLogs (Pencatatan aktivitas krusial dan modifikasi data).
+- RefreshTokens (Manajemen state token JWT).
+
+========================================================================
+4. NAVIGASI CODEBASE (FILE & FOLDER INTI)
+========================================================================
+
+Urutan navigasi file yang direkomendasikan untuk memahami struktur sumber kode:
+
+Setup & Konfigurasi:
+- README.md : Panduan setup environment dan instalasi dependensi.
+- app/Config/Routes.php : Peta seluruh URL dan endpoint API.
+
+Controllers (Pintu Masuk):
+- app/Controllers/AuthController.php : Logika login, register, dan penghancuran sesi.
+- app/Controllers/DailyReportController.php : Handler CRUD form laporan (termasuk alur wizard bertahap).
+
+Services (Logika Bisnis Terpusat):
+- app/Services/DailyReportService.php : Core engine untuk simpan draft, kompilasi form, dan finalisasi submit.
+- app/Services/AuthService.php : Validasi role dan eksekusi audit log.
+- app/Services/ReportPdfService.php : Pemetaan data dari database untuk dirender oleh Dompdf.
+- app/Services/TokenService.php : Logika pembuatan dan verifikasi signature JWT.
+
+Frontend & Assets:
+- public/Assets/Js/MobileApp.js : Script untuk manipulasi DOM pada form, interaksi wizard, PWA install prompt, dan fitur copy to clipboard.
+- public/manifest.json & public/service-worker.js : Konfigurasi PWA dan strategi caching.
+
+========================================================================
+5. SECURITY & ACCESS CONTROL
+========================================================================
+
+Aplikasi ini mengimplementasikan standar keamanan ketat untuk melindungi data operasional:
+
+- CSRF Protection: Diaktifkan secara global di CI4 untuk seluruh request POST dari web form.
+- Secure Headers: Diimplementasikan untuk mencegah celah keamanan seperti XSS atau clickjacking.
+- Role-Based Access Control (RBAC): Dikelola melalui CI4 Filters. Rute spesifik diblokir pada level middleware jika peran pengguna tidak sesuai.
+- JWT Auth: Digunakan khusus untuk mengamankan endpoint API di luar akses sesi browser konvensional.
+- Audit Trail: Sistem logging pada database untuk mencatat eksekusi tindakan krusial (mencakup waktu, IP address, dan jenis tindakan).
+
+========================================================================
+6. BATASAN & KONFIGURASI TEKNIS
+========================================================================
+
+Parameter operasional yang wajib diperhatikan saat proses deployment atau modifikasi:
+
+- File Upload:
+  - Format file yang diizinkan: JPG, JPEG, PNG, WEBP.
+  - Batas ukuran file maksimal diatur pada controller/service: 5 MB per foto laporan, 3 MB untuk foto profil. Pengaturan upload_max_filesize dan post_max_size pada php.ini server minimal harus 10MB.
+- Direktori Upload: Disimpan pada direktori public/Uploads/. Direktori ini wajib memiliki permission writeable (seperti 755 atau 775) pada environment production.
+- Integrasi WhatsApp: Fitur ini bergantung pada pihak ketiga (Fonnte API). Jika token tidak valid atau kosong, sistem akan melakukan bypass pada fitur pengiriman pesan agar aplikasi tidak mengalami crash.
+- PWA Setup: Agar Service Worker berjalan normal dan prompt instalasi PWA dapat muncul, aplikasi wajib berjalan di atas protokol HTTPS (pengecualian untuk environment localhost).
+
+========================================================================
+7. PRASYARAT PENGETAHUAN DASAR (HAL YANG WAJIB DIPELAJARI)
+========================================================================
+
+Untuk memahami, memelihara, atau mengembangkan aplikasi ini secara efektif, berikut adalah konsep dasar yang wajib dipelajari:
+
+1. Object-Oriented Programming (OOP) dalam PHP:
+   - Memahami class, object, inheritance, encapsulation, dan polymorphism.
+   - Memahami namespace dan autoloading (PSR-4).
+
+2. Konsep MVC dan Framework CodeIgniter 4:
+   - Pemahaman cara kerja Routing, Middleware (Filters), Controllers, dan Models.
+   - Memahami cara memisahkan logika bisnis dari Controller ke dalam lapisan Service (Design Pattern Controller-Service-Model).
+
+3. Desain Basis Data Relasional (RDBMS):
+   - Pemahaman tentang Normalisasi Data, Primary Key, Foreign Key, dan relasi antar tabel (One-to-Many, Many-to-Many).
+   - Penulisan Query SQL untuk operasi JOIN antar tabel.
+
+4. Konsep RESTful API & Keamanan Stateless:
+   - Memahami struktur data JSON dan metode HTTP (GET, POST, PUT, DELETE).
+   - Memahami cara kerja dan siklus hidup JWT (JSON Web Token) untuk proses otentikasi.
+
+5. Progressive Web App (PWA):
+   - Memahami peran manifest.json.
+   - Memahami konsep dasar Service Worker terkait caching asset dan offline support.
+
+6. Dasar Frontend Terpadu:
+   - Memahami DOM Manipulation menggunakan Vanilla JavaScript murni.
+   - Memahami struktur form HTML dan implementasi fetch/AJAX request.

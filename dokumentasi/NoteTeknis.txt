@@ -1,0 +1,685 @@
+================================================================================
+CATATAN PROJECT TRACE - Tracking Report & Activity Control Engine
+================================================================================
+
+NAMA PROJECT
+============
+TRACE (Tracking Report & Activity Control Engine)
+Aplikasi laporan harian lapangan berbasis mobile web untuk pencatatan aktivitas 
+pekerjaan, progres, kondisi lapangan, dokumentasi foto, dan monitoring laporan.
+
+
+DESKRIPSI PROJECT
+=================
+Project ini adalah aplikasi web berbasis CodeIgniter 4 yang digunakan untuk:
+- Input laporan harian lapangan
+- Penyimpanan draft laporan
+- Review dan submit laporan final
+- Monitoring laporan berdasarkan user, tanggal, dan status
+- Rekap untuk admin dan manager
+- Export laporan ke PDF
+- Integrasi pengiriman ringkasan laporan ke WhatsApp
+
+Framework: CodeIgniter 4
+Database: MySQL
+Language: PHP 8.2+
+Frontend: HTML5, CSS3, JavaScript, PWA (Progressive Web App)
+
+
+BAHASA PEMROGRAMAN & TEKNOLOGI
+==============================
+Backend:
+- PHP 8.2+
+- CodeIgniter 4 Framework
+- MySQL Database
+
+Dependencies:
+- codeigniter4/framework: ^4.7
+- dompdf/dompdf: ^3.1 (untuk PDF generation)
+- firebase/php-jwt: ^7.0 (untuk JWT authentication)
+- fakerphp/faker: ^1.9 (testing)
+- phpunit/phpunit: ^10.5.16 (unit testing)
+
+
+STRUKTUR FOLDER UTAMA
+====================
+/app/
+  ├── Config/              (Konfigurasi aplikasi)
+  ├── Controllers/         (Business logic handler)
+  ├── Models/              (Database interaction)
+  ├── Services/            (Reusable business logic)
+  ├── Libraries/           (Custom libraries)
+  ├── Views/               (Frontend templates)
+  ├── Filters/             (Middleware/authentication)
+  ├── Helpers/             (Helper functions)
+  └── Database/            (Migrations & Seeds)
+
+/public/                    (Dokumentasi publik - index.php, assets)
+/vendor/                    (Composer dependencies)
+/writable/                  (Cache, logs, session - must be writable)
+/db/                        (Database backup files)
+
+
+SETUP DI LOCAL
+==============
+
+1. REQUIREMENT SYSTEM
+   - PHP 8.2 atau lebih tinggi
+   - MySQL/MariaDB 5.7+
+   - Composer (untuk package management)
+   - Git (untuk version control)
+   - Text editor/IDE (VS Code, PhpStorm, dll)
+
+2. LANGKAH SETUP AWAL
+   a) Clone/copy project ke folder lokal
+   b) Buka terminal di folder project
+   c) Install dependencies:
+      $ composer install
+
+3. KONFIGURASI .ENV (File Environment)
+   a) Copy file 'env' menjadi '.env'
+      $ cp env .env
+   
+   b) Edit file .env dan sesuaikan konfigurasi:
+      CI_ENVIRONMENT = development
+      
+      app.baseURL = 'http://localhost:8080/'
+      
+      database.default.hostname = localhost
+      database.default.database = bytecorner_db
+      database.default.username = root
+      database.default.password = (kosongkan atau sesuaikan)
+      database.default.DBDriver = MySQLi
+      database.default.port = 3306
+
+4. SETUP DATABASE
+   a) Buat database MySQL baru:
+      CREATE DATABASE bytecorner_db;
+   
+   b) Import schema dari file:
+      $ mysql -u root -p bytecorner_db < db/bytecorner_db_schema.sql
+   
+   c) Alternatif import data lengkap (dengan master data):
+      $ mysql -u root -p bytecorner_db < db/bytecorner_db_all_data.sql
+
+5. JALANKAN APLIKASI
+   Gunakan development server CodeIgniter:
+   $ php spark serve
+   
+   Default server akan jalan di: http://localhost:8080/
+
+
+BASH COMMANDS YANG SERING DIGUNAKAN
+===================================
+
+1. DEVELOPMENT SERVER
+   $ php spark serve                    (Run dev server on http://localhost:8080)
+   $ php spark serve --port 3000        (Custom port, contoh 3000)
+
+2. DATABASE MIGRATION
+   $ php spark migrate                  (Run all pending migrations)
+   $ php spark migrate:rollback         (Rollback last batch)
+   $ php spark migrate:refresh          (Rollback all + run migrate)
+   $ php spark migrate:status           (Show migration status)
+
+3. SEED DATABASE
+   $ php spark db:seed Database\\Seeder (Run seeder class)
+
+4. GENERATE MODELS/CONTROLLERS
+   $ php spark make:model MyModel       (Generate model class)
+   $ php spark make:controller MyController  (Generate controller)
+   $ php spark make:migration create_table_name  (Generate migration)
+
+5. CACHE & DEBUG
+   $ php spark cache:clear             (Clear application cache)
+   $ php spark db:seed                 (Seed database)
+
+6. TESTING
+   $ composer test                     (Run PHPUnit tests)
+   $ vendor/bin/phpunit               (Alternative way to run tests)
+
+7. COMPOSER
+   $ composer install                  (Install all dependencies)
+   $ composer update                   (Update dependencies)
+   $ composer dump-autoload            (Refresh autoloader)
+
+
+ROUTES & PAGES MAPPING
+======================
+Project ini menggunakan role-based access control dengan 3 role utama:
+1. Supervisor/PIC (Pelaksana) - User biasa, input laporan
+2. Manager - Monitoring laporan tim
+3. Admin - Kelola user dan master data
+
+ROUTE STRUKTUR:
+- Routes tanpa filter: Accessible to anyone (guest)
+- Routes dengan 'auth': Require login untuk semua role
+- Routes dengan 'role:' filter: Restricted by role
+
+
+PAGE DETAIL MAPPING
+===================
+Format: URL / HTTP METHOD | Controller::Method | Model | Service | View
+
+
+1. AUTHENTICATION (Guest Routes - Tanpa Filter)
+   ================================================
+
+   A. LOGIN PAGE
+      URL: / login (GET)
+      Method: AuthController::loginPage
+      Model: -
+      Service: -
+      View: app/Views/Auth/LoginPage.php
+      Deskripsi: Halaman form login dengan input nomor HP dan password
+      
+   B. LOGIN PROSES
+      URL: /login (POST)
+      Method: AuthController::login
+      Model: UserModel, RefreshTokenModel
+      Service: AuthService
+      View: -
+      Deskripsi: Proses verifikasi login dan set session/cookies
+
+   C. OTP PAGE
+      URL: /login/otp (GET)
+      Method: AuthController::otpPage
+      Model: -
+      Service: -
+      View: app/Views/Auth/LoginPage.php (with otpMode=true)
+      Deskripsi: Halaman verifikasi OTP (opsional, jika OTP diaktifkan)
+
+   D. OTP VERIFIKASI
+      URL: /login/otp (POST)
+      Method: AuthController::verifyOtp
+      Model: UserModel, UserSessionModel
+      Service: AuthService
+      View: -
+      Deskripsi: Verifikasi kode OTP dan create session
+
+   E. REGISTER PAGE
+      URL: /register (GET)
+      Method: AuthController::registerPage
+      Model: -
+      Service: -
+      View: app/Views/Auth/RegisterPage.php
+      Deskripsi: Form registrasi user baru
+
+   F. REGISTER PROSES
+      URL: /register (POST)
+      Method: AuthController::register
+      Model: UserModel, RoleModel
+      Service: AuthService
+      View: -
+      Deskripsi: Validasi dan create user baru ke database
+
+
+2. AUTHENTICATED ROUTES - USER UMUM (Dengan Filter 'auth')
+   =========================================================
+
+   A. DASHBOARD HOME
+      URL: / (GET)
+      Method: DashboardController::index
+      Model: DailyReportModel, UserModel
+      Service: DashboardService, AuthService
+      View: app/Views/Dashboard/HomePage.php
+      Deskripsi: Halaman utama setelah login dengan quick menu (buat laporan, lihat draft, dll)
+
+   B. PROFILE USER
+      URL: /profile (GET)
+      Method: ProfileController::index
+      Model: UserModel
+      Service: AuthService
+      View: app/Views/Profile/
+      Deskripsi: Halaman profile user untuk lihat data dan upload foto
+
+   C. UPLOAD FOTO PROFILE
+      URL: /profile/photo (POST)
+      Method: ProfileController::uploadPhoto
+      Model: UserModel
+      Service: -
+      View: -
+      Deskripsi: API endpoint untuk upload foto profile
+
+
+3. REPORT PAGES - USER UMUM (Dengan Filter 'auth')
+   ===============================================
+
+   A. CREATE REPORT PAGE
+      URL: /reports/create (GET)
+      Method: DailyReportController::create
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel, ReportWorkerUpdateModel
+      Service: DailyReportService
+      View: app/Views/Reports/CreateReportPage.php
+      Deskripsi: Form input laporan harian baru (bertahap per section)
+      Flow:
+        - Halaman form dengan berbagai section:
+          * Basic Info (tanggal, lokasi, cuaca)
+          * Equipment (alat berat yang digunakan)
+          * Worker Update (update kondisi pekerja)
+          * Notes & Photos (catatan dan dokumentasi)
+        - Form options diambil dari: HeavyEquipmentCategoryModel, WorkerCategoryModel
+        - User bisa simpan draft atau submit
+
+   B. EDIT REPORT PAGE
+      URL: /reports/edit/{id} (GET)
+      Method: DailyReportController::edit
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel, ReportWorkerUpdateModel
+      Service: DailyReportService, AuthService
+      View: app/Views/Reports/CreateReportPage.php
+      Deskripsi: Edit draft laporan yang sudah tersimpan
+      Flow:
+        - Load existing report data via DailyReportService::getReportBundle()
+        - Check permission: user hanya bisa edit laporan miliknya
+        - Load existing photos dan equipment data
+        - Return form dengan data yang sudah fill
+      Validasi: User hanya bisa edit laporan dengan status 'Draft'
+
+   C. SAVE DRAFT REPORT
+      URL: /reports/save-draft (POST)
+      Method: DailyReportController::saveDraft
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel, ReportWorkerUpdateModel
+      Service: DailyReportService
+      View: -
+      Deskripsi: Save laporan ke database sebagai DRAFT
+      Flow:
+        - Validate input
+        - Insert/update DailyReportModel dengan status 'Draft'
+        - Insert photos ke ReportPhotoModel
+        - Insert equipment to ReportHeavyEquipmentUsageModel
+        - Handle file upload untuk dokumentasi
+
+   D. REVIEW REPORT PAGE
+      URL: /reports/review/{id} (GET)
+      Method: DailyReportController::review
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel, ReportWorkerUpdateModel
+      Service: DailyReportService, ReportSummaryService, AuthService
+      View: app/Views/Reports/ReviewReportPage.php
+      Deskripsi: Review checklist sebelum final submit
+      Flow:
+        - Load report bundle (report + related data)
+        - Generate preview ringkasan untuk WhatsApp
+        - Show all data dalam readonly mode
+        - Button: Approve untuk submit atau back untuk edit
+
+   E. SUBMIT REPORT (FINAL)
+      URL: /reports/submit/{id} (POST)
+      Method: DailyReportController::submit
+      Model: DailyReportModel, AuditLogModel
+      Service: DailyReportService, ReportSummaryService
+      View: -
+      Deskripsi: Final submit laporan (change status dari Draft ke Submitted)
+      Flow:
+        - Validate report is still Draft
+        - Check permission
+        - Update DailyReportModel::status = 'Submitted'
+        - Create audit log entry
+        - Optional: Send WhatsApp summary via Notification::sendToWhatsApp()
+
+   F. DETAIL REPORT PAGE
+      URL: /reports/detail/{id} (GET)
+      Method: DailyReportController::detail
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel
+      Service: DailyReportService
+      View: app/Views/Reports/DetailReportPage.php
+      Deskripsi: Lihat detail laporan (readonly view)
+      Flow:
+        - Load complete report bundle
+        - Show all data in formatted display
+        - Show photos dengan preview
+        - Show edit/delete options jika user adalah owner dan status masih Draft
+
+   G. EXPORT REPORT TO PDF
+      URL: /reports/pdf/{id} (GET)
+      Method: DailyReportController::pdf
+      Model: DailyReportModel, ReportPhotoModel, ReportHeavyEquipmentUsageModel
+      Service: DailyReportService, ReportPdfService
+      View: app/Views/Reports/PdfTemplate.php
+      Deskripsi: Generate dan download laporan dalam format PDF
+      Flow:
+        - Load report data
+        - Render HTML template (PdfTemplate.php)
+        - Convert to PDF menggunakan DOMPDF library
+        - Force download file PDF
+
+
+4. LOGOUT
+   =======
+   URL: /logout (GET & POST)
+   Method: AuthController::logout
+   Model: UserSessionModel
+   Service: AuthService
+   View: -
+   Deskripsi: Destroy session dan redirect ke login page
+
+
+5. ADMIN PAGES (Filter 'role:Admin')
+   =================================
+
+   A. USER MANAGEMENT PAGE
+      URL: /admin/users (GET)
+      Method: AdminController::users
+      Model: UserModel, RoleModel
+      Service: -
+      View: app/Views/Admin/UserManagementPage.php
+      Deskripsi: Halaman kelola user - list semua user dengan aksi edit/delete/toggle
+      Flow:
+        - Load all users dari UserModel::getActiveUsersForManagement()
+        - Load all roles dari RoleModel
+        - Show form edit jika ada query param 'edit={id}'
+        - Table dengan columns: nama, role, status, aksi
+
+   B. SAVE USER (CREATE/UPDATE)
+      URL: /admin/users/save (POST)
+      Method: AdminController::saveUser
+      Model: UserModel
+      Service: -
+      View: -
+      Deskripsi: Create user baru atau update existing user
+      Flow:
+        - Validate input fields
+        - Check if userId > 0 (update) atau create new
+        - Hash password jika ada
+        - Save ke UserModel
+
+   C. TOGGLE USER STATUS
+      URL: /admin/users/toggle/{id} (GET)
+      Method: AdminController::toggleUserStatus
+      Model: UserModel
+      Service: -
+      View: -
+      Deskripsi: Toggle active/inactive status user
+      Flow:
+        - Get current user status
+        - Toggle to opposite
+        - Redirect back
+
+   D. DELETE USER
+      URL: /admin/users/delete/{id} (GET)
+      Method: AdminController::deleteUser
+      Model: UserModel, AuditLogModel
+      Service: -
+      View: -
+      Deskripsi: Delete/soft-delete user dari sistem
+      Flow:
+        - Validate user exists
+        - Soft delete (mark as inactive) atau hard delete tergantung config
+        - Create audit log
+
+
+6. ADMIN & MANAGER PAGES (Filter 'role:Admin,Manager')
+   ===================================================
+
+   A. REPORT MONITORING PAGE
+      URL: /admin/reports (GET)
+      Method: AdminController::reports
+      Model: DailyReportModel, UserModel, ReportHeavyEquipmentUsageModel
+      Service: DailyReportService
+      View: app/Views/Admin/ReportManagementPage.php
+      Deskripsi: Halaman monitoring laporan untuk admin dan manager
+      Flow:
+        - Load laporan berdasarkan filter:
+          * Date range
+          * User/PIC
+          * Status (Draft, Submitted, Reviewed)
+        - Show table dengan columns: tanggal, user, lokasi, status, aksi
+        - Aksi: view detail, export PDF, print
+      Catatan: Admin bisa lihat semua laporan, Manager bisa lihat laporan tim mereka
+
+
+7. MANAGER DASHBOARD (Filter 'role:Admin,Manager')
+   ==============================================
+
+   A. MANAGER HOME PAGE
+      URL: /manager/ (GET)
+      Method: ManagerController::index
+      Model: DailyReportModel, UserModel
+      Service: DashboardService
+      View: app/Views/Manager/ (belum dilihat detail)
+      Deskripsi: Dashboard untuk manager dengan overview trend laporan tim
+      Flow:
+        - Show summary laporan tim (jumlah submitted, draft, dll)
+        - Show trend graph/chart
+        - Quick access ke halaman monitoring
+
+
+8. API ROUTES (Untuk integrasi eksternal)
+   ======================================
+
+   A. ISSUE JWT TOKEN
+      URL: /api/auth/token (POST)
+      Method: Api\AuthTokenController::issueToken
+      Model: UserModel, RefreshTokenModel
+      Service: TokenService
+      View: -
+      Response: JSON {token: "...", refresh_token: "..."}
+      Deskripsi: API endpoint untuk mendapatkan JWT token (login API)
+
+   B. REFRESH JWT TOKEN
+      URL: /api/auth/refresh (POST)
+      Method: Api\AuthTokenController::refreshToken
+      Model: RefreshTokenModel
+      Service: TokenService
+      View: -
+      Response: JSON {token: "...", refresh_token: "..."}
+      Deskripsi: API endpoint untuk refresh expired token
+
+   C. GET TODAY REPORTS (Filter 'jwtAuth')
+      URL: /api/reports/today (GET)
+      Method: Api\ReportApiController::today
+      Model: DailyReportModel
+      Service: DailyReportService
+      View: -
+      Response: JSON array of reports
+      Deskripsi: API untuk get laporan hari ini
+
+   D. GET REPORT DETAIL (Filter 'jwtAuth')
+      URL: /api/reports/detail/{id} (GET)
+      Method: Api\ReportApiController::detail
+      Model: DailyReportModel, ReportPhotoModel
+      Service: DailyReportService
+      View: -
+      Response: JSON report object dengan detail
+      Deskripsi: API untuk get detail laporan by ID
+
+
+MAIN FILES & THEIR PURPOSES
+==========================
+
+CONTROLLERS:
+- AuthController.php          → Handle login, register, OTP verification
+- DashboardController.php     → Dashboard home page logic
+- DailyReportController.php   → Report CRUD operations (create, edit, review, submit, detail, pdf)
+- ProfileController.php       → User profile management
+- AdminController.php         → Admin features (user management, report monitoring)
+- ManagerController.php       → Manager dashboard
+- Api/AuthTokenController.php → JWT token generation and refresh
+- Api/ReportApiController.php → API endpoints untuk report data
+- BaseController.php          → Base class dengan shared methods
+
+MODELS:
+- UserModel.php                           → User data & authentication
+- DailyReportModel.php                    → Daily report master data
+- ReportPhotoModel.php                    → Report photo/attachment records
+- ReportHeavyEquipmentUsageModel.php      → Equipment used in report
+- ReportWorkerUpdateModel.php             → Worker status updates in report
+- RoleModel.php                           → User roles
+- HeavyEquipmentCategoryModel.php         → Equipment types/categories
+- WorkerCategoryModel.php                 → Worker categories/positions
+- RefreshTokenModel.php                   → JWT refresh tokens
+- UserSessionModel.php                    → User session tracking
+- AuditLogModel.php                       → Audit trail untuk semua actions
+
+SERVICES:
+- AuthService.php            → Authentication logic, user session, OTP verification
+- DailyReportService.php     → Report business logic (validation, data processing)
+- DashboardService.php       → Dashboard data aggregation
+- ReportPdfService.php       → PDF generation using DOMPDF
+- ReportSummaryService.php   → Report summary formatting untuk WhatsApp
+- TokenService.php           → JWT token generation and validation
+
+VIEWS:
+- Auth/LoginPage.php         → Login form (shared dengan OTP)
+- Auth/RegisterPage.php      → Registration form
+- Dashboard/HomePage.php     → Home dashboard after login
+- Reports/CreateReportPage.php    → Report input form (create/edit)
+- Reports/ReviewReportPage.php    → Report review checklist
+- Reports/DetailReportPage.php    → Report detail readonly view
+- Reports/PdfTemplate.php         → PDF template
+- Admin/UserManagementPage.php    → User management table
+- Admin/ReportManagementPage.php  → Report monitoring table
+- Profile/ProfilePage.php         → User profile page
+- Layouts/                        → Layout templates (header, footer, sidebar)
+- Components/                     → Reusable view components
+
+FILTERS (Middleware):
+- AuthFilter.php             → Check user logged in (session based)
+- GuestFilter.php            → Check user NOT logged in (untuk login/register page)
+- JwtAuthFilter.php          → Check JWT token valid (untuk API routes)
+- RoleFilter.php             → Check user role permissions
+
+
+DATABASE TABLES UTAMA
+====================
+users                              → User accounts dan credentials
+daily_reports                      → Daily report master
+report_photos                      → Photos/attachments per report
+report_heavy_equipment_usage       → Equipment records per report
+report_worker_updates              → Worker updates per report
+roles                              → Role master data
+user_sessions                      → Session tracking
+refresh_tokens                     → JWT refresh tokens
+audit_logs                         → Audit trail
+heavy_equipment_categories         → Equipment types
+worker_categories                  → Worker types/positions
+
+
+DEVELOPMENT WORKFLOW
+====================
+
+1. BUAT FITUR BARU:
+   a) Buat route di app/Config/Routes.php
+   b) Buat controller method di app/Controllers/
+   c) Buat model jika perlu database query
+   d) Buat service untuk business logic
+   e) Buat view file di app/Views/
+   f) Test di browser atau API testing tool
+
+2. HANDLE DATABASE CHANGE:
+   a) Create migration: php spark make:migration add_column_to_table
+   b) Edit migration file di app/Database/Migrations/
+   c) Run migration: php spark migrate
+   d) Update model properties sesuai kebutuhan
+
+3. ADD NEW DEPENDENCY:
+   a) Install via composer: composer require vendor/package
+   b) Commit composer.lock
+   c) Update production .env jika ada konfigurasi baru
+
+4. DEBUG:
+   - Check app/writable/logs/ untuk error logs
+   - Use dd() function untuk dump & die
+   - Enable debug toolbar via CI_ENVIRONMENT = development
+   - Check browser console untuk JS errors
+
+
+PENTING UNTUK PRODUCTION
+=========================
+
+1. File .env HARUS dikonfigurasi:
+   - CI_ENVIRONMENT = production
+   - app.baseURL = actual domain
+   - app.forceGlobalSecureRequests = true (HTTPS)
+   - database credentials sesuai production DB
+
+2. Folder writable/ MUST WRITABLE:
+   chmod -R 755 writable/
+   chmod -R 755 public/Uploads/
+
+3. Set proper file permissions:
+   chmod 644 app/Config/*.php
+   chmod 755 app/
+
+4. Enable SSL/HTTPS untuk PWA functionality
+
+5. Setup backup strategy untuk database
+
+6. Monitor logs di writable/logs/ secara berkala
+
+
+FILE STRUKTUR UPLOAD
+====================
+public/Uploads/           → Untuk file uploads dari user
+public/Uploads/Reports/   → Khusus report photos/attachments
+writable/pdf-preview/     → Temporary PDF files
+writable/cache/           → Cache files
+writable/logs/            → Application logs
+writable/session/         → Session data
+
+
+TESTING
+=======
+Project ini include PHPUnit untuk unit testing.
+Test files tersimpan di folder: tests/
+
+Jalankan test:
+$ composer test
+
+atau
+
+$ vendor/bin/phpunit
+
+
+CATATAN TAMBAHAN
+================
+
+1. ROLE PERMISSION:
+   - Supervisor/PIC: Bisa create/edit laporan sendiri, view own reports
+   - Manager: Bisa lihat laporan tim, monitoring, trend analysis
+   - Admin: Full access, manage users, monitoring semua laporan
+
+2. REPORT STATUS WORKFLOW:
+   Draft → (submit) → Submitted → (review) → Reviewed
+   
+   Hanya user dengan role Manager/Admin yang bisa "review" laporan.
+
+3. SECURITY:
+   - Password di hash dengan bcrypt (default CodeIgniter)
+   - Session menggunakan CodeIgniter session handler
+   - JWT token untuk API dengan Firebase JWT library
+   - SQL injection protection via ORM dan parameter binding
+   - CSRF protection via CodeIgniter token
+
+4. ENVIRONMENT VARIABLES PENTING:
+   - CI_ENVIRONMENT: development/production
+   - app.baseURL: Base URL aplikasi
+   - app.forceGlobalSecureRequests: Force HTTPS
+   - database.default.*: Database credentials
+   - app.CSPEnabled: Content Security Policy
+
+5. FITUR PWA:
+   - service-worker.js di public/
+   - manifest.json di public/
+   - Bisa di-install sebagai app di mobile
+   - Offline support (partial)
+
+6. INTEGRASI WHATSAPP:
+   - Via Notification::sendToWhatsApp() library
+   - Trigger saat report submitted
+   - Kirim ringkasan laporan ke nomor group/channel
+
+
+HELPFUL RESOURCES
+=================
+- CodeIgniter 4 Docs: https://codeigniter.com/user_guide/
+- DOMPDF Docs: https://github.com/dompdf/dompdf
+- Firebase JWT Docs: https://github.com/firebase/php-jwt
+- MySQL Docs: https://dev.mysql.com/doc/
+
+
+================================================================================
+END OF NOTES
+================================================================================
+Created: 29 April 2026
+Project: TRACE - Tracking Report & Activity Control Engine
+Status: Development Ready
