@@ -105,6 +105,7 @@ class DailyReportService
             return ['success' => false, 'errors' => ['authorization' => 'Anda tidak berhak mengubah laporan ini.']];
         }
 
+        //commet
         $workerUpdates    = $this->normalizeWorkerUpdates($payload);
         $heavyEquipment   = $this->normalizeHeavyEquipment($payload);
         $realizationItems = $this->normalizeRealizationItems($payload);
