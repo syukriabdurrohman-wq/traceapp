@@ -55,8 +55,16 @@ $displayWaSummary = trim((string) ($waSummary ?? ''));
                 <strong class="StructuredValue"><?= esc($bundle['location']['area_label']) ?></strong>
             </div>
             <div class="StructuredRow">
-                <span class="StructuredLabel">Lokasi</span>
+                <span class="StructuredLabel">Lokasi Terkini</span>
                 <strong class="StructuredValue"><?= esc($bundle['location']['current_location']) ?></strong>
+            </div>
+            <div class="StructuredRow">
+                <span class="StructuredLabel">Lokasi Struktur</span>
+                <strong class="StructuredValue"><?= esc($bundle['location']['structure_location'] ?? '-') ?></strong>
+            </div>
+            <div class="StructuredRow">
+                <span class="StructuredLabel">Titik Struktur</span>
+                <strong class="StructuredValue"><?= esc($bundle['location']['structure_point'] ?? '-') ?></strong>
             </div>
             <div class="StructuredRow">
                 <span class="StructuredLabel">Created By</span>

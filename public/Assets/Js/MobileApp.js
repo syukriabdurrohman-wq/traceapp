@@ -227,20 +227,21 @@
         sync();
     };
 
-    const initConditionalAreaReason = () => {
-        const select = document.getElementById('AreaCodeSelect');
-        const field = document.getElementById('LocationReasonField');
+    const initConditionalCurrentLocation = () => {
+        const select = document.getElementById('CurrentLocationSelect');
+        const field = document.getElementById('CurrentLocationManualField');
 
         if (!select || !field) {
             return;
         }
 
-        const input = field.querySelector('textarea, input');
+        const input = field.querySelector('input');
         const sync = () => {
             const visible = select.value === 'Lainnya';
             field.style.display = visible ? 'grid' : 'none';
             if (input) {
                 input.disabled = !visible;
+                input.required = visible;
                 if (!visible) {
                     input.value = '';
                 }
@@ -571,6 +572,9 @@
                         }
                     });
                 });
+                form.querySelectorAll('select').forEach((select) => {
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                });
             } catch (error) {
                 console.warn('Gagal memulihkan auto draft lokal', error);
             }
@@ -884,7 +888,7 @@
         initPhotoPreview();
         initCopyButtons();
         initOvertimeToggle();
-        initConditionalAreaReason();
+        initConditionalCurrentLocation();
         initDynamicRows();
         initBannerCarousel();
         initQuickMenuToggle();

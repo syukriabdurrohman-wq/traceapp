@@ -19,7 +19,7 @@ class CreateDailyReportsTable extends Migration
         `report_date` date NOT NULL,
         `worker_user_id` bigint unsigned NOT NULL,
         `created_by_user_id` bigint unsigned NOT NULL,
-        `weather_code` enum('Cerah','Hujan','Mendung') COLLATE utf8mb4_unicode_ci NOT NULL,
+        `weather_code` enum('Cerah','Mendung','Hujan','Badai') COLLATE utf8mb4_unicode_ci NOT NULL,
         `realization_summary` text COLLATE utf8mb4_unicode_ci NOT NULL,
         `whatsapp_summary` longtext COLLATE utf8mb4_unicode_ci DEFAULT NULL,
         `status` enum('Draft','Submitted') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Draft',

@@ -17,6 +17,8 @@ class CreateReportLocationsTable extends Migration
         `id` bigint unsigned NOT NULL AUTO_INCREMENT,
         `daily_report_id` bigint unsigned NOT NULL,
         `current_location` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+        `structure_location` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+        `structure_point` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
         `area_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
         `area_label` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
         `reason` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,

@@ -473,8 +473,14 @@ if ($photoCount <= 1) {
                 <td><?= esc($formatValue($location['area_label'] ?? '')) ?></td>
             </tr>
             <tr>
-                <td class="SummaryLabel">Lokasi</td>
+                <td class="SummaryLabel">Lokasi Terkini</td>
                 <td colspan="3"><?= esc($formatValue($location['current_location'] ?? '')) ?></td>
+            </tr>
+            <tr>
+                <td class="SummaryLabel">Lokasi Struktur</td>
+                <td><?= esc($formatValue($location['structure_location'] ?? '')) ?></td>
+                <td class="SummaryLabel">Titik Struktur</td>
+                <td><?= esc($formatValue($location['structure_point'] ?? '')) ?></td>
             </tr>
             <?php if (trim((string) ($location['reason'] ?? '')) !== '') : ?>
                 <tr>

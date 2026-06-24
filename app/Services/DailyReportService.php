@@ -40,7 +40,27 @@ class DailyReportService
                 ['code' => 'AreaLaut', 'label' => 'Area Laut'],
                 ['code' => 'Lainnya', 'label' => 'Lainnya'],
             ],
-            'weatherOptions' => ['Cerah', 'Hujan', 'Mendung'],
+            'currentLocations' => ['Area Swangi', 'Area Lanal', 'Area RPI', 'Area Laut', 'Lainnya'],
+            'structureLocations' => [
+                'PL1',
+                'PL2',
+                'P23',
+                'P24',
+                'P25',
+                'P26',
+                'P27',
+                'P28',
+                'P29',
+                'P30',
+                'P32',
+                'P33',
+                'P34',
+                'Fender PL1',
+                'Fender PL2',
+                'Fender P22',
+                'Fender P23',
+            ],
+            'weatherOptions' => ['Cerah', 'Mendung', 'Hujan', 'Badai'],
             'workerUsers'    => $this->userModel->getActiveReportUsers(),
             'workerCategories' => $this->workerCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll(),
             'heavyCategories'  => $this->heavyEquipmentCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll(),
@@ -73,11 +93,18 @@ class DailyReportService
 
     public function saveDraftFromRequest(array $payload, array $files, array $actor): array
     {
+        $payload['areaCode'] = $this->resolveAreaCodeFromCurrentLocation((string) ($payload['currentLocation'] ?? ''));
+
         $validation = service('validation');
         $rules      = config(\Config\Validation::class)->dailyReport;
 
         if (! $validation->setRules($rules)->run($payload)) {
             return ['success' => false, 'errors' => $validation->getErrors()];
+        }
+
+        $currentLocation = $this->resolveCurrentLocation($payload);
+        if ($currentLocation === '') {
+            return ['success' => false, 'errors' => ['currentLocationManual' => 'Lokasi terkini manual wajib diisi jika memilih Lainnya.']];
         }
 
         $reportId      = (int) ($payload['reportId'] ?? 0);
@@ -159,7 +186,9 @@ class DailyReportService
         }
 
         $this->upsertSingleTable('ReportLocations', 'daily_report_id', $reportId, [
-            'current_location' => trim((string) $payload['currentLocation']),
+            'current_location' => $currentLocation,
+            'structure_location' => trim((string) ($payload['structureLocation'] ?? '')),
+            'structure_point' => trim((string) ($payload['structurePoint'] ?? '')),
             'area_code'        => $payload['areaCode'],
             'area_label'       => $this->resolveAreaLabel($payload['areaCode']),
             'reason'           => trim((string) ($payload['locationReason'] ?? '')),
@@ -340,7 +369,7 @@ class DailyReportService
         return [
             'report'         => $report,
             'worker'         => $worker ?? ['full_name' => $report['worker_name']],
-            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'area_label' => '', 'reason' => ''],
+            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => '', 'area_label' => '', 'reason' => ''],
             'material'       => $db->table('ReportMaterialSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'tool'           => $db->table('ReportToolSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'obstacle'       => $db->table('ReportObstacleSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['obstacle_shape' => '', 'obstacle_cause' => '', 'obstacle_impact' => '', 'additional_note' => ''],
@@ -392,7 +421,7 @@ class DailyReportService
 
         return [
             'report'         => $report ?? [],
-            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => ''],
+            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => ''],
             'material'       => $db->table('ReportMaterialSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'tool'           => $db->table('ReportToolSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'obstacle'       => $db->table('ReportObstacleSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['obstacle_shape' => ''],
@@ -605,6 +634,28 @@ class DailyReportService
             'AreaLaut'   => 'Area Laut',
             default      => 'Lainnya',
         };
+    }
+
+    private function resolveAreaCodeFromCurrentLocation(string $currentLocation): string
+    {
+        return match (trim($currentLocation)) {
+            'Area Lanal'  => 'AreaLanal',
+            'Area Swangi' => 'AreaSwangi',
+            'Area RPI'    => 'AreaRpi',
+            'Area Laut'   => 'AreaLaut',
+            default       => 'Lainnya',
+        };
+    }
+
+    private function resolveCurrentLocation(array $payload): string
+    {
+        $selected = trim((string) ($payload['currentLocation'] ?? ''));
+
+        if ($selected === 'Lainnya') {
+            return trim((string) ($payload['currentLocationManual'] ?? ''));
+        }
+
+        return $selected;
     }
 
     private function upsertSingleTable(string $table, string $keyColumn, int $keyValue, array $data): void

@@ -170,6 +170,8 @@ class DailyReportController extends BaseController
             'reportDate'         => $bundle['report']['report_date'],
             'workerUserId'       => $bundle['report']['worker_user_id'],
             'currentLocation'    => $bundle['location']['current_location'],
+            'structureLocation'  => $bundle['location']['structure_location'] ?? '',
+            'structurePoint'     => $bundle['location']['structure_point'] ?? '',
             'areaCode'           => $bundle['location']['area_code'],
             'locationReason'     => $bundle['location']['reason'],
             'weatherCode'        => $bundle['report']['weather_code'],

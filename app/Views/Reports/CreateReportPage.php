@@ -10,6 +10,12 @@ $realizationItems = old('realizationItems', $formData['realizationItems'] ?? [])
 $workerCustomRows = old('workerCustomRows', $formData['workerCustomRows'] ?? []);
 $heavyCustomRows  = old('heavyCustomRows', $formData['heavyCustomRows'] ?? []);
 $lightTools       = old('lightTools', $formData['lightTools'] ?? []);
+$currentLocationOptions = $formOptions['currentLocations'] ?? ['Area Swangi', 'Area Lanal', 'Area RPI', 'Area Laut', 'Lainnya'];
+$structureLocationOptions = $formOptions['structureLocations'] ?? ['PL1', 'PL2', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P32', 'P33', 'P34', 'Fender PL1', 'Fender PL2', 'Fender P22', 'Fender P23'];
+$currentLocationValue = old('currentLocation', $formData['currentLocation'] ?? '');
+$isCustomCurrentLocation = $currentLocationValue !== '' && ! in_array($currentLocationValue, $currentLocationOptions, true);
+$currentLocationSelectValue = $isCustomCurrentLocation ? 'Lainnya' : $currentLocationValue;
+$currentLocationManualValue = old('currentLocationManual', $isCustomCurrentLocation ? $currentLocationValue : '');
 
 $realizationItems = is_array($realizationItems) && $realizationItems !== [] ? $realizationItems : [['work_item' => '', 'unit' => '', 'plan_text' => '', 'realization_text' => '', 'deviation_text' => '', 'partner' => '']];
 $workerCustomRows = is_array($workerCustomRows) && $workerCustomRows !== [] ? $workerCustomRows : [['label' => '', 'quantity' => '']];
@@ -188,30 +194,39 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
         <label class="FieldBlock">
             <span>Lokasi Terkini</span>
             <small class="RequiredHint">wajib diisi</small>
-            <input type="text" name="currentLocation" value="<?= esc(old('currentLocation', $formData['currentLocation'] ?? '')) ?>" placeholder="Contoh: Jl. Soekarno Hatta, 82 Bandung" required>
-        </label>
-        <label class="FieldBlock">
-            <span>Lokasi Struktur</span>
-            <small class="RequiredHint">wajib diisi</small>
-            <input type="text" name="currentLocation" value="<?= esc(old('currentLocation', $formData['currentLocation'] ?? '')) ?>" placeholder="Contoh: Jl. Soekarno Hatta, 82 Bandung" required>
-        </label>
-
-        <label class="FieldBlock">
-            <span>Pilih Area</span>
-            <small class="RequiredHint">wajib diisi</small>
-            <select name="areaCode" id="AreaCodeSelect" required>
-                <option value="">Pilih area</option>
-                <?php foreach ($formOptions['areas'] as $area) : ?>
-                    <option value="<?= esc($area['code']) ?>" <?= old('areaCode', $formData['areaCode'] ?? '') === $area['code'] ? 'selected' : '' ?>>
-                        <?= esc($area['label']) ?>
+            <select name="currentLocation" id="CurrentLocationSelect" required>
+                <option value="">Pilih lokasi terkini</option>
+                <?php foreach ($currentLocationOptions as $locationOption) : ?>
+                    <option value="<?= esc($locationOption) ?>" <?= $currentLocationSelectValue === $locationOption ? 'selected' : '' ?>>
+                        <?= esc($locationOption) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
         </label>
 
-        <label class="FieldBlock" id="LocationReasonField">
-            <span>Reason / Keterangan Tambahan</span>
-            <textarea name="locationReason" rows="3" placeholder="Tambahkan keterangan lokasi bila perlu"><?= esc(old('locationReason', $formData['locationReason'] ?? '')) ?></textarea>
+        <label class="FieldBlock" id="CurrentLocationManualField">
+            <span>Lokasi Terkini Lainnya</span>
+            <small class="RequiredHint">wajib diisi jika memilih Lainnya</small>
+            <input type="text" name="currentLocationManual" value="<?= esc($currentLocationManualValue) ?>" placeholder="Isi lokasi terkini secara manual">
+        </label>
+
+        <label class="FieldBlock">
+            <span>Lokasi Struktur</span>
+            <small class="RequiredHint">wajib diisi</small>
+            <select name="structureLocation" required>
+                <option value="">Pilih lokasi struktur</option>
+                <?php foreach ($structureLocationOptions as $structureLocation) : ?>
+                    <option value="<?= esc($structureLocation) ?>" <?= old('structureLocation', $formData['structureLocation'] ?? '') === $structureLocation ? 'selected' : '' ?>>
+                        <?= esc($structureLocation) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+
+        <label class="FieldBlock">
+            <span>Titik Struktur</span>
+            <small class="RequiredHint">wajib diisi</small>
+            <input type="text" name="structurePoint" value="<?= esc(old('structurePoint', $formData['structurePoint'] ?? '')) ?>" placeholder="Isi titik struktur" required>
         </label>
 
         <div class="UploadCard" id="section-photo">

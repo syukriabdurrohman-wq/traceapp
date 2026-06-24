@@ -34,6 +34,8 @@ class ReportSummaryService
         $this->appendSection($lines, 'LOKASI PEKERJAAN', [
             'Area: ' . $this->value($location['area_label'] ?? ''),
             'Lokasi Terkini: ' . $this->value($location['current_location'] ?? ''),
+            'Lokasi Struktur: ' . $this->value($location['structure_location'] ?? ''),
+            'Titik Struktur: ' . $this->value($location['structure_point'] ?? ''),
             'Keterangan Lokasi: ' . $this->value($location['reason'] ?? ''),
         ]);
 

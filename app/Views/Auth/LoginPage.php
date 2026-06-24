@@ -257,6 +257,35 @@
         font-weight: 700;
     }
 
+    .LoginInlineSignupLogo {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        text-align: center;
+    }
+
+    .LoginInlineSignupLogo img {
+        display: block;
+        width: min(150px, 48vw);
+        height: auto;
+        object-fit: contain;
+    }
+
+    .LoginInlineSignupLogo img.LoginInlineProjectLogoSmall {
+        width: min(82px, 26vw);
+    }
+
+    .LoginInlineProjectName {
+        width: min(360px, 92vw);
+        margin: 0;
+        color: var(--TextMuted);
+        font-size: clamp(0.54rem, 2.25vw, 0.72rem);
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
     @media (max-width: 390px) {
         .LoginInlineHero {
             padding: max(24px, calc(env(safe-area-inset-top) + 14px)) 18px 88px;
@@ -335,6 +364,11 @@
         <div class="LoginInlineFooter">
             <span>Belum punya akun?</span>
             <a href="<?= base_url('register') ?>">Sign Up</a>
+        </div>
+        <div class="LoginInlineSignupLogo">
+            <img src="<?= base_url('Assets/Image/Logo_KSO.png') ?>" alt="Logo">
+            <p class="LoginInlineProjectName">Proyek Jembatan Penghubung Pulau Laut - Pulau Kalimantan</p>
+            <img src="<?= base_url('Assets/Image/Powered_by.png') ?>" alt="Logo proyek" class="LoginInlineProjectLogoSmall">
         </div>
         <?php endif; ?>
 
