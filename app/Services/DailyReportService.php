@@ -40,7 +40,7 @@ class DailyReportService
                 ['code' => 'AreaLaut', 'label' => 'Area Laut'],
                 ['code' => 'Lainnya', 'label' => 'Lainnya'],
             ],
-            'currentLocations' => ['Area Swangi', 'Area Lanal', 'Area RPI', 'Area Laut', 'Lainnya'],
+            'currentLocations' => ['Area Laut', 'Area Swangi', 'Area Lanal', 'Area RPI', 'Lainnya'],
             'structureLocations' => [
                 'PL1',
                 'PL2',
@@ -105,6 +105,29 @@ class DailyReportService
         $currentLocation = $this->resolveCurrentLocation($payload);
         if ($currentLocation === '') {
             return ['success' => false, 'errors' => ['currentLocationManual' => 'Lokasi terkini manual wajib diisi jika memilih Lainnya.']];
+        }
+
+        $requiresStructure = trim((string) ($payload['currentLocation'] ?? '')) === 'Area Laut';
+        $structureLocation = trim((string) ($payload['structureLocation'] ?? ''));
+        $structurePoint    = trim((string) ($payload['structurePoint'] ?? ''));
+
+        if ($requiresStructure && ($structureLocation === '' || $structurePoint === '')) {
+            $errors = [];
+
+            if ($structureLocation === '') {
+                $errors['structureLocation'] = 'Lokasi struktur wajib dipilih jika Lokasi Terkini Area Laut.';
+            }
+
+            if ($structurePoint === '') {
+                $errors['structurePoint'] = 'Titik struktur wajib diisi jika Lokasi Terkini Area Laut.';
+            }
+
+            return ['success' => false, 'errors' => $errors];
+        }
+
+        if (! $requiresStructure) {
+            $structureLocation = '';
+            $structurePoint    = '';
         }
 
         $reportId      = (int) ($payload['reportId'] ?? 0);
@@ -187,8 +210,8 @@ class DailyReportService
 
         $this->upsertSingleTable('ReportLocations', 'daily_report_id', $reportId, [
             'current_location' => $currentLocation,
-            'structure_location' => trim((string) ($payload['structureLocation'] ?? '')),
-            'structure_point' => trim((string) ($payload['structurePoint'] ?? '')),
+            'structure_location' => $structureLocation,
+            'structure_point' => $structurePoint,
             'area_code'        => $payload['areaCode'],
             'area_label'       => $this->resolveAreaLabel($payload['areaCode']),
             'reason'           => trim((string) ($payload['locationReason'] ?? '')),
@@ -207,9 +230,9 @@ class DailyReportService
 
         $this->upsertSingleTable('ReportObstacleSummaries', 'daily_report_id', $reportId, [
             'obstacle_shape' => trim((string) $payload['obstacleShape']),
-            'obstacle_cause' => trim((string) $payload['obstacleCause']),
-            'obstacle_impact'=> trim((string) $payload['obstacleImpact']),
-            'additional_note'=> trim((string) ($payload['obstacleNote'] ?? '')),
+            'obstacle_cause' => '',
+            'obstacle_impact'=> '',
+            'additional_note'=> '',
             'updated_at'     => date('Y-m-d H:i:s'),
         ]);
 
@@ -479,11 +502,38 @@ class DailyReportService
 
     private function normalizeHeavyEquipment(array $payload): array
     {
-        $items      = [];
-        $categories = $this->heavyEquipmentCategoryModel->findAll();
-        $quantities = $payload['heavyEquipment'] ?? [];
+        $items          = [];
+        $categories     = $this->heavyEquipmentCategoryModel->findAll();
+        $quantities     = $payload['heavyEquipment'] ?? [];
+        $selections     = $payload['heavyEquipmentSelections'] ?? [];
+        $manualInputs   = $payload['heavyEquipmentManual'] ?? [];
+        $dropdownSlugs  = array_keys($this->heavyEquipmentDropdownOptions());
 
         foreach ($categories as $category) {
+            if ((int) ($category['is_active'] ?? 0) !== 1) {
+                continue;
+            }
+
+            if (in_array((string) ($category['slug'] ?? ''), $dropdownSlugs, true)) {
+                $selection = trim((string) ($selections[$category['id']] ?? ''));
+
+                if ($selection === 'Lainnya') {
+                    $selection = trim((string) ($manualInputs[$category['id']] ?? ''));
+                }
+
+                if ($selection !== '') {
+                    $items[] = [
+                        'category_id' => (int) $category['id'],
+                        'label'       => $category['name'] . ' - ' . $selection,
+                        'quantity'    => 1,
+                        'volume'      => '1',
+                        'unit'        => 'unit',
+                    ];
+                }
+
+                continue;
+            }
+
             $quantity = (int) ($quantities[$category['id']] ?? 0);
             if ($quantity > 0) {
                 $items[] = [
@@ -525,6 +575,15 @@ class DailyReportService
         return $items;
     }
 
+    private function heavyEquipmentDropdownOptions(): array
+    {
+        return [
+            'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
+            'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC 800', 'Hitachi 275 DC'],
+            'boring-machine' => ['SR 405', 'SR 215', 'SR 265', 'XR 280'],
+        ];
+    }
+
     private function normalizeRealizationItems(array $payload): array
     {
         $items = [];
@@ -539,17 +598,95 @@ class DailyReportService
                 'unit'             => trim((string) ($row['unit'] ?? '')),
                 'plan_text'        => trim((string) ($row['plan_text'] ?? '')),
                 'realization_text' => trim((string) ($row['realization_text'] ?? '')),
-                'deviation_text'   => trim((string) ($row['deviation_text'] ?? '')),
-                'partner'          => trim((string) ($row['partner'] ?? '')),
+                'deviation_text'   => $this->calculateDeviationText($row),
+                'partner'          => $this->resolveRealizationPartner($row),
             ];
         }
 
         return $items;
     }
 
+    private function calculateDeviationText(array $row): string
+    {
+        $plan        = $this->readNumericText((string) ($row['plan_text'] ?? ''));
+        $realization = $this->readNumericText((string) ($row['realization_text'] ?? ''));
+
+        if ($plan === null || $realization === null) {
+            return '';
+        }
+
+        return $this->formatNumericText($realization - $plan);
+    }
+
+    private function readNumericText(string $value): ?float
+    {
+        if (! preg_match('/-?\d+(?:[.,]\d+)?/', str_replace(' ', '', $value), $matches)) {
+            return null;
+        }
+
+        return (float) str_replace(',', '.', $matches[0]);
+    }
+
+    private function formatNumericText(float $value): string
+    {
+        $formatted = rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.');
+
+        return str_replace('.', ',', $formatted === '-0' ? '0' : $formatted);
+    }
+
+    private function resolveRealizationPartner(array $row): string
+    {
+        $partner = trim((string) ($row['partner'] ?? ''));
+
+        if ($partner === 'Lainnya') {
+            return trim((string) ($row['partner_manual'] ?? ''));
+        }
+
+        return $partner;
+    }
+
     private function normalizeLightToolRows(array $payload): array
     {
         $items = [];
+        $counterLabels = [
+            'genset' => 'Genset',
+            'winch' => 'Winch',
+            'guide-beam' => 'Guide Beam',
+            'trafo-las' => 'Trafo Las',
+        ];
+        $dropdownLabels = [
+            'core-barrel' => 'Core Barrel',
+            'bucket-barrel' => 'Bucket Barrel',
+        ];
+
+        foreach ($counterLabels as $slug => $label) {
+            $quantity = trim((string) ($payload['lightToolCounts'][$slug] ?? ''));
+
+            if ($quantity !== '' && (float) str_replace(',', '.', $quantity) > 0) {
+                $items[] = [
+                    'tool_label' => $label,
+                    'volume'     => $quantity,
+                    'unit'       => 'unit',
+                ];
+            }
+        }
+
+        foreach ($dropdownLabels as $slug => $label) {
+            $selection = trim((string) ($payload['lightToolSelections'][$slug] ?? ''));
+
+            if ($selection === 'Lainnya') {
+                $selection = trim((string) ($payload['lightToolManual'][$slug] ?? ''));
+            }
+
+            if ($selection !== '') {
+                $items[] = [
+                    'tool_label' => $label . ' - ' . $selection,
+                    'volume'     => '1',
+                    'unit'       => 'unit',
+                ];
+            }
+        }
+
         foreach (($payload['lightTools'] ?? []) as $row) {
             $label = trim((string) ($row['tool_label'] ?? ''));
             if ($label === '') {

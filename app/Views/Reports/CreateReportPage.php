@@ -4,23 +4,93 @@
 <?php
 $workerUpdates    = $formData['workerUpdates'] ?? [];
 $heavyEquipment   = $formData['heavyEquipment'] ?? [];
+$heavyEquipmentSelections = old('heavyEquipmentSelections', $formData['heavyEquipmentSelections'] ?? []);
+$heavyEquipmentManual = old('heavyEquipmentManual', $formData['heavyEquipmentManual'] ?? []);
 $existingPhotos   = $reportBundle['photos'] ?? [];
 $currentStep      = (int) old('currentStep', $formData['currentStep'] ?? 1);
 $realizationItems = old('realizationItems', $formData['realizationItems'] ?? []);
 $workerCustomRows = old('workerCustomRows', $formData['workerCustomRows'] ?? []);
 $heavyCustomRows  = old('heavyCustomRows', $formData['heavyCustomRows'] ?? []);
 $lightTools       = old('lightTools', $formData['lightTools'] ?? []);
-$currentLocationOptions = $formOptions['currentLocations'] ?? ['Area Swangi', 'Area Lanal', 'Area RPI', 'Area Laut', 'Lainnya'];
+$lightToolCounts  = old('lightToolCounts', $formData['lightToolCounts'] ?? []);
+$lightToolSelections = old('lightToolSelections', $formData['lightToolSelections'] ?? []);
+$lightToolManual  = old('lightToolManual', $formData['lightToolManual'] ?? []);
+$currentLocationOptions = $formOptions['currentLocations'] ?? ['Area Laut', 'Area Swangi', 'Area Lanal', 'Area RPI', 'Lainnya'];
 $structureLocationOptions = $formOptions['structureLocations'] ?? ['PL1', 'PL2', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P32', 'P33', 'P34', 'Fender PL1', 'Fender PL2', 'Fender P22', 'Fender P23'];
 $currentLocationValue = old('currentLocation', $formData['currentLocation'] ?? '');
 $isCustomCurrentLocation = $currentLocationValue !== '' && ! in_array($currentLocationValue, $currentLocationOptions, true);
 $currentLocationSelectValue = $isCustomCurrentLocation ? 'Lainnya' : $currentLocationValue;
 $currentLocationManualValue = old('currentLocationManual', $isCustomCurrentLocation ? $currentLocationValue : '');
+$partnerOptions = ['RPI', 'Berdikari'];
+$heavyDropdownOptions = [
+    'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
+    'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC 800', 'Hitachi 275 DC'],
+    'boring-machine' => ['SR 405', 'SR 215', 'SR 265', 'XR 280'],
+];
+$lightCounterOptions = [
+    'genset' => 'Genset',
+    'winch' => 'Winch',
+    'guide-beam' => 'Guide Beam',
+    'trafo-las' => 'Trafo Las',
+];
+$lightDropdownOptions = [
+    'core-barrel' => [
+        'label' => 'Core Barrel',
+        'options' => ['Dia. 1', 'Dia. 1,2', 'Dia. 1,4', 'Dia. 1,5', 'Dia. 1,6', 'Dia. 1,7', 'Dia. 1,8', 'Dia. 2,0', 'Dia. 2,2', 'Dia. 2,4'],
+    ],
+    'bucket-barrel' => [
+        'label' => 'Bucket Barrel',
+        'options' => ['Dia. 1', 'Dia. 1,2', 'Dia. 1,4', 'Dia. 1,5', 'Dia. 1,6', 'Dia. 1,7', 'Dia. 2,0'],
+    ],
+];
 
 $realizationItems = is_array($realizationItems) && $realizationItems !== [] ? $realizationItems : [['work_item' => '', 'unit' => '', 'plan_text' => '', 'realization_text' => '', 'deviation_text' => '', 'partner' => '']];
 $workerCustomRows = is_array($workerCustomRows) && $workerCustomRows !== [] ? $workerCustomRows : [['label' => '', 'quantity' => '']];
 $heavyCustomRows  = is_array($heavyCustomRows) && $heavyCustomRows !== [] ? $heavyCustomRows : [['label' => '', 'quantity' => '']];
-$lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' => '', 'unit' => '']];
+$lightToolCounts = is_array($lightToolCounts) ? $lightToolCounts : [];
+$lightToolSelections = is_array($lightToolSelections) ? $lightToolSelections : [];
+$lightToolManual = is_array($lightToolManual) ? $lightToolManual : [];
+$lightTools = is_array($lightTools) ? $lightTools : [];
+
+if ($lightToolCounts === [] && $lightToolSelections === [] && $lightTools !== []) {
+    $customLightTools = [];
+
+    foreach ($lightTools as $lightTool) {
+        $toolLabel = trim((string) ($lightTool['tool_label'] ?? ''));
+        $toolVolume = trim((string) ($lightTool['volume'] ?? ''));
+        $matched = false;
+
+        foreach ($lightCounterOptions as $slug => $label) {
+            if (strcasecmp($toolLabel, $label) === 0) {
+                $lightToolCounts[$slug] = $toolVolume;
+                $matched = true;
+                break;
+            }
+        }
+
+        if ($matched) {
+            continue;
+        }
+
+        foreach ($lightDropdownOptions as $slug => $config) {
+            $prefix = $config['label'] . ' - ';
+            if (str_starts_with($toolLabel, $prefix)) {
+                $selection = trim(substr($toolLabel, strlen($prefix)));
+                $lightToolSelections[$slug] = $selection;
+                $matched = true;
+                break;
+            }
+        }
+
+        if (! $matched) {
+            $customLightTools[] = $lightTool;
+        }
+    }
+
+    $lightTools = $customLightTools;
+}
+
+$lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' => '', 'unit' => '']];
 ?>
 
 <style>
@@ -35,36 +105,42 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
     .BoxedCounterField {
         display: flex;
         flex-direction: column;
-        border: 1px solid #f9a8d4;
+        border: 1px solid #d1d5db;
         border-radius: 12px;
         padding: 12px;
-        background: linear-gradient(135deg, #fff7ed, #fdf2f8);
-        box-shadow: 0 4px 10px rgba(249, 115, 22, 0.12);
+        background: #f3f4f6;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
     }
 
     .BoxedCounterField span {
         font-size: 13px;
         font-weight: 700;
-        color: #be185d;
+        color: #374151;
         margin-bottom: 8px;
     }
 
-    .BoxedCounterField input {
-        border: 1px solid #fb923c;
+    .BoxedCounterField input,
+    .BoxedCounterField select {
+        border: 1px solid #d1d5db;
         border-radius: 8px;
         padding: 8px 12px;
         font-size: 14px;
         width: 100%;
-        background: #fff7ed;
-        color: #831843;
+        background: #ffffff;
+        color: #111827;
         text-align: left;
         outline: none;
     }
 
-    .BoxedCounterField input:focus {
-        border-color: #ec4899;
-        box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.18);
+    .BoxedCounterField input:focus,
+    .BoxedCounterField select:focus {
+        border-color: #9ca3af;
+        box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.16);
         background: #ffffff;
+    }
+
+    .BoxedCounterField .HeavyManualInput {
+        margin-top: 8px;
     }
 
     .StickyActionBar.isWizard {
@@ -210,10 +286,10 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
             <input type="text" name="currentLocationManual" value="<?= esc($currentLocationManualValue) ?>" placeholder="Isi lokasi terkini secara manual">
         </label>
 
-        <label class="FieldBlock">
+        <label class="FieldBlock" id="StructureLocationField">
             <span>Lokasi Struktur</span>
-            <small class="RequiredHint">wajib diisi</small>
-            <select name="structureLocation" required>
+            <small class="RequiredHint">wajib diisi jika memilih Area Laut</small>
+            <select name="structureLocation" id="StructureLocationSelect">
                 <option value="">Pilih lokasi struktur</option>
                 <?php foreach ($structureLocationOptions as $structureLocation) : ?>
                     <option value="<?= esc($structureLocation) ?>" <?= old('structureLocation', $formData['structureLocation'] ?? '') === $structureLocation ? 'selected' : '' ?>>
@@ -223,10 +299,10 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
             </select>
         </label>
 
-        <label class="FieldBlock">
+        <label class="FieldBlock" id="StructurePointField">
             <span>Titik Struktur</span>
-            <small class="RequiredHint">wajib diisi</small>
-            <input type="text" name="structurePoint" value="<?= esc(old('structurePoint', $formData['structurePoint'] ?? '')) ?>" placeholder="Isi titik struktur" required>
+            <small class="RequiredHint">wajib diisi jika memilih Area Laut</small>
+            <input type="text" name="structurePoint" id="StructurePointInput" value="<?= esc(old('structurePoint', $formData['structurePoint'] ?? '')) ?>" placeholder="Isi titik struktur">
         </label>
 
         <div class="UploadCard" id="section-photo">
@@ -271,10 +347,16 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
 
         <div class="DynamicRows" data-dynamic-rows="realizationItems">
             <?php foreach ($realizationItems as $index => $item) : ?>
+                <?php
+                $partnerValue = trim((string) ($item['partner'] ?? ''));
+                $partnerManualValue = trim((string) ($item['partner_manual'] ?? ''));
+                $partnerSelectValue = in_array($partnerValue, $partnerOptions, true) ? $partnerValue : ($partnerValue !== '' || $partnerManualValue !== '' ? 'Lainnya' : '');
+                $partnerManualValue = $partnerManualValue !== '' ? $partnerManualValue : ($partnerSelectValue === 'Lainnya' ? $partnerValue : '');
+                ?>
                 <div class="DynamicRow" data-dynamic-row>
                     <label class="FieldBlock">
-                        <span>Item Pekerjaan</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][work_item]" value="<?= esc($item['work_item'] ?? '') ?>" placeholder="Item pekerjaan">
+                        <span>Deskripsi Pekerjaan</span>
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][work_item]" value="<?= esc($item['work_item'] ?? '') ?>" placeholder="Deskripsi pekerjaan">
                     </label>
                     <label class="FieldBlock">
                         <span>Satuan</span>
@@ -282,19 +364,31 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
                     </label>
                     <label class="FieldBlock">
                         <span>Rencana</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][plan_text]" value="<?= esc($item['plan_text'] ?? '') ?>" placeholder="Rencana">
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][plan_text]" value="<?= esc($item['plan_text'] ?? '') ?>" placeholder="Rencana" data-plan-input>
                     </label>
                     <label class="FieldBlock">
                         <span>Realisasi</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][realization_text]" value="<?= esc($item['realization_text'] ?? '') ?>" placeholder="Realisasi">
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][realization_text]" value="<?= esc($item['realization_text'] ?? '') ?>" placeholder="Realisasi" data-realization-input>
                     </label>
                     <label class="FieldBlock">
                         <span>Deviasi</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][deviation_text]" value="<?= esc($item['deviation_text'] ?? '') ?>" placeholder="Deviasi">
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][deviation_text]" value="<?= esc($item['deviation_text'] ?? '') ?>" placeholder="Otomatis" readonly data-deviation-input>
                     </label>
                     <label class="FieldBlock">
                         <span>Rekanan</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][partner]" value="<?= esc($item['partner'] ?? '') ?>" placeholder="Rekanan">
+                        <select name="realizationItems[<?= esc((string) $index) ?>][partner]" data-partner-select>
+                            <option value="">Pilih rekanan</option>
+                            <?php foreach ($partnerOptions as $partnerOption) : ?>
+                                <option value="<?= esc($partnerOption) ?>" <?= $partnerSelectValue === $partnerOption ? 'selected' : '' ?>>
+                                    <?= esc($partnerOption) ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="Lainnya" <?= $partnerSelectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                        </select>
+                    </label>
+                    <label class="FieldBlock" data-partner-manual-field>
+                        <span>Rekanan Lainnya</span>
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][partner_manual]" value="<?= esc($partnerManualValue) ?>" placeholder="Isi rekanan lainnya" data-partner-manual-input>
                     </label>
                     <button type="button" class="GhostButton DynamicRemoveButton" data-remove-row>Hapus</button>
                 </div>
@@ -353,9 +447,31 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
         </div>
         <div class="GridTwoColumns">
             <?php foreach ($formOptions['heavyCategories'] as $category) : ?>
+                <?php
+                $categoryId = (string) $category['id'];
+                $categorySlug = (string) ($category['slug'] ?? '');
+                $dropdownOptions = $heavyDropdownOptions[$categorySlug] ?? null;
+                $selectionValue = trim((string) ($heavyEquipmentSelections[$category['id']] ?? ''));
+                $manualValue = trim((string) ($heavyEquipmentManual[$category['id']] ?? ''));
+                $selectValue = $dropdownOptions !== null && in_array($selectionValue, $dropdownOptions, true) ? $selectionValue : ($selectionValue !== '' || $manualValue !== '' ? 'Lainnya' : '');
+                $manualValue = $manualValue !== '' ? $manualValue : ($selectValue === 'Lainnya' ? $selectionValue : '');
+                ?>
                 <label class="BoxedCounterField">
                     <span><?= esc($category['name']) ?></span>
-                    <input type="number" min="0" name="heavyEquipment[<?= esc((string) $category['id']) ?>]" value="<?= esc((string) old('heavyEquipment.' . $category['id'], $heavyEquipment[$category['id']] ?? '')) ?>" placeholder="0">
+                    <?php if ($dropdownOptions !== null) : ?>
+                        <select name="heavyEquipmentSelections[<?= esc($categoryId) ?>]" data-heavy-select>
+                            <option value="">Pilih <?= esc($category['name']) ?></option>
+                            <?php foreach ($dropdownOptions as $dropdownOption) : ?>
+                                <option value="<?= esc($dropdownOption) ?>" <?= $selectValue === $dropdownOption ? 'selected' : '' ?>>
+                                    <?= esc($dropdownOption) ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="Lainnya" <?= $selectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                        </select>
+                        <input class="HeavyManualInput" type="text" name="heavyEquipmentManual[<?= esc($categoryId) ?>]" value="<?= esc($manualValue) ?>" placeholder="Isi <?= esc($category['name']) ?> lainnya" data-heavy-manual>
+                    <?php else : ?>
+                        <input type="number" min="0" name="heavyEquipment[<?= esc($categoryId) ?>]" value="<?= esc((string) old('heavyEquipment.' . $category['id'], $heavyEquipment[$category['id']] ?? '')) ?>" placeholder="0">
+                    <?php endif; ?>
                 </label>
             <?php endforeach; ?>
         </div>
@@ -390,16 +506,47 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
             <span>Volume dan satuan alat ringan</span>
         </div>
 
+        <div class="GridTwoColumns">
+            <?php foreach ($lightCounterOptions as $slug => $label) : ?>
+                <label class="BoxedCounterField">
+                    <span><?= esc($label) ?></span>
+                    <input type="number" min="0" name="lightToolCounts[<?= esc($slug) ?>]" value="<?= esc((string) ($lightToolCounts[$slug] ?? '')) ?>" placeholder="0">
+                </label>
+            <?php endforeach; ?>
+
+            <?php foreach ($lightDropdownOptions as $slug => $config) : ?>
+                <?php
+                $selectionValue = trim((string) ($lightToolSelections[$slug] ?? ''));
+                $manualValue = trim((string) ($lightToolManual[$slug] ?? ''));
+                $selectValue = in_array($selectionValue, $config['options'], true) ? $selectionValue : ($selectionValue !== '' || $manualValue !== '' ? 'Lainnya' : '');
+                $manualValue = $manualValue !== '' ? $manualValue : ($selectValue === 'Lainnya' ? $selectionValue : '');
+                ?>
+                <label class="BoxedCounterField">
+                    <span><?= esc($config['label']) ?></span>
+                    <select name="lightToolSelections[<?= esc($slug) ?>]" data-light-select>
+                        <option value="">Pilih <?= esc($config['label']) ?></option>
+                        <?php foreach ($config['options'] as $option) : ?>
+                            <option value="<?= esc($option) ?>" <?= $selectValue === $option ? 'selected' : '' ?>>
+                                <?= esc($option) ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="Lainnya" <?= $selectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                    </select>
+                    <input class="HeavyManualInput" type="text" name="lightToolManual[<?= esc($slug) ?>]" value="<?= esc($manualValue) ?>" placeholder="Isi <?= esc($config['label']) ?> lainnya" data-light-manual>
+                </label>
+            <?php endforeach; ?>
+        </div>
+
         <div class="DynamicRows" data-dynamic-rows="lightTools">
-            <p class="AccordionGroupTitle">Alat Kerja Ringan</p>
+            <p class="AccordionGroupTitle">Alat Ringan Lainnya</p>
             <?php foreach ($lightTools as $index => $item) : ?>
                 <div class="DynamicRow isThreeColumn" data-dynamic-row>
                     <label class="FieldBlock">
-                        <span>Nama Alat</span>
+                        <span>Nama Alat Ringan</span>
                         <input type="text" name="lightTools[<?= esc((string) $index) ?>][tool_label]" value="<?= esc($item['tool_label'] ?? '') ?>" placeholder="Nama alat">
                     </label>
                     <label class="FieldBlock">
-                        <span>Volume</span>
+                        <span>Jumlah Alat</span>
                         <input type="text" name="lightTools[<?= esc((string) $index) ?>][volume]" value="<?= esc($item['volume'] ?? '') ?>" placeholder="Volume">
                     </label>
                     <label class="FieldBlock">
@@ -414,8 +561,7 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
 
         <label class="FieldBlock" id="section-material">
             <span>Material & Bahan Kerja</span>
-            <small class="RequiredHint">wajib diisi</small>
-            <textarea name="materialSummary" rows="4" placeholder="Contoh: menggunakan Material XXX dan Bahan ZZZ untuk pekerjaan AAA" required><?= esc(old('materialSummary', $formData['materialSummary'] ?? '')) ?></textarea>
+            <textarea name="materialSummary" rows="4" placeholder="Contoh: menggunakan Material XXX dan Bahan ZZZ untuk pekerjaan AAA"><?= esc(old('materialSummary', $formData['materialSummary'] ?? '')) ?></textarea>
         </label>
 
         <div class="StickyActionBar isWizard">
@@ -430,25 +576,9 @@ $lightTools       = is_array($lightTools) && $lightTools !== [] ? $lightTools : 
             <span>Lengkapi penutup laporan (Opsional)</span>
         </div>
 
-        <div class="FieldGrid">
-            <label class="FieldBlock">
-                <span>Bentuk Kendala</span>
-                <input type="text" name="obstacleShape" value="<?= esc(old('obstacleShape', $formData['obstacleShape'] ?? '')) ?>">
-            </label>
-            <label class="FieldBlock">
-                <span>Penyebab Kendala</span>
-                <input type="text" name="obstacleCause" value="<?= esc(old('obstacleCause', $formData['obstacleCause'] ?? '')) ?>">
-            </label>
-        </div>
-
         <label class="FieldBlock">
-            <span>Dampak Pekerjaan</span>
-            <input type="text" name="obstacleImpact" value="<?= esc(old('obstacleImpact', $formData['obstacleImpact'] ?? '')) ?>">
-        </label>
-
-        <label class="FieldBlock">
-            <span>Penjelasan Tambahan</span>
-            <textarea name="obstacleNote" rows="3" placeholder="Bila diperlukan"><?= esc(old('obstacleNote', $formData['obstacleNote'] ?? '')) ?></textarea>
+            <span>Bentuk Kendala</span>
+            <textarea name="obstacleShape" rows="4" placeholder="Contoh: tidak ada kendala, cuaca buruk, akses material terlambat"><?= esc(old('obstacleShape', $formData['obstacleShape'] ?? '')) ?></textarea>
         </label>
 
         <label class="FieldBlock">

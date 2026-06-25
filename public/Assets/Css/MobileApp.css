@@ -813,6 +813,44 @@ textarea {
     background: #fff2ed;
 }
 
+.SecondaryActionButton.hasText {
+    min-height: 36px;
+    max-width: 112px;
+    padding: 6px 10px;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    white-space: normal;
+    text-align: center;
+}
+
+.SecondaryActionButton.hasText svg {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+}
+
+.SecondaryActionButton.hasText span {
+    display: block;
+    min-width: 0;
+}
+
+.SecondaryActionButton.hasText small {
+    display: block;
+    margin-top: 2px;
+    color: var(--TextMuted);
+    font-size: 0.56rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.PageHeader .SecondaryActionButton.hasText svg {
+    width: 15px;
+    height: 15px;
+}
+
 .InlineAction {
     min-height: 32px;
     font-size: 0.68rem;
@@ -863,6 +901,106 @@ textarea {
     justify-items: center;
     gap: 6px;
     text-align: center;
+}
+
+.DetailSuccessCard {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+}
+
+.DetailSuccessCard .SuccessIcon {
+    grid-row: auto;
+}
+
+.DetailSuccessCard > strong,
+.DetailSuccessCard > p {
+    margin: 0;
+}
+
+.DetailCopyButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid rgba(22, 163, 74, 0.24);
+    border-radius: 12px;
+    color: #166534;
+    background: rgba(22, 163, 74, 0.12);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.DetailCopyButton svg {
+    width: 16px;
+    height: 16px;
+}
+
+.DetailWaHighlight {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.DetailWaHighlight span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--BrandPrimary);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.DetailWaHighlight p {
+    margin: 0;
+    color: #1e293b;
+    font-size: 0.76rem;
+    line-height: 1.55;
+}
+
+.DetailEditedNote {
+    margin: 0;
+    color: #e67e22;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.DetailPdfCard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.DetailPdfCard strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.DetailPdfCard p {
+    margin: 0;
+    color: var(--TextMuted);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+.DetailPdfCard .InlineAction {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 10px;
+    gap: 6px;
+    font-size: 0.68rem;
+}
+
+.DetailPdfCard .InlineAction svg {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
 }
 
 .SuccessIcon {
@@ -1540,6 +1678,59 @@ select:focus {
 
 .MetricCard.isAccent .MetricLabel {
     color: rgba(255, 255, 255, 0.78);
+}
+
+.ReviewProgressCard .MetricLabel {
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.ReviewProgressCard strong {
+    display: block;
+    margin-top: 6px;
+    font-size: clamp(1.65rem, 8vw, 2.35rem);
+    line-height: 1.05;
+}
+
+.ReviewSummaryHeading {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.ReviewSummaryTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ReviewSummaryTitle h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.ReviewSummaryIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    color: var(--BrandPrimary);
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+}
+
+.ReviewSummaryIcon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ReviewSummaryHeading p {
+    margin: 0;
+    color: var(--TextMuted);
+    font-size: 0.72rem;
+    line-height: 1.5;
 }
 
 .InfoText {

@@ -11,8 +11,16 @@ $actionIcon = $actionIcon ?? 'detail';
     </div>
 
     <?php if (! empty($actionHref ?? '') && ! empty($actionLabel ?? '')) : ?>
-        <a class="SecondaryActionButton isIconOnly" href="<?= esc($actionHref) ?>" aria-label="<?= esc($actionLabel) ?>" title="<?= esc($actionLabel) ?>">
+        <a class="SecondaryActionButton <?= ! empty($actionText ?? '') ? 'hasText' : 'isIconOnly' ?>" href="<?= esc($actionHref) ?>" aria-label="<?= esc($actionLabel) ?>" title="<?= esc($actionLabel) ?>"<?= ! empty($actionDownload ?? '') ? ' download="' . esc($actionDownload) . '"' : '' ?>>
             <?= trace_icon((string) $actionIcon) ?>
+            <?php if (! empty($actionText ?? '')) : ?>
+                <span>
+                    <?= esc($actionText) ?>
+                    <?php if (! empty($actionHint ?? '')) : ?>
+                        <small><?= esc($actionHint) ?></small>
+                    <?php endif; ?>
+                </span>
+            <?php endif; ?>
         </a>
     <?php endif; ?>
 </section>

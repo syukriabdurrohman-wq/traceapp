@@ -11,15 +11,30 @@ $overtimeText = $hasOvertime
     ? trim((string) ($bundle['overtime']['start_time'] ?? '-')) . ' - ' . trim((string) ($bundle['overtime']['end_time'] ?? '-'))
     : 'Tidak ada lembur';
 $displayWaSummary = trim((string) ($waSummary ?? ''));
+$pdfUrl = base_url('reports/pdf/' . $bundle['report']['id'] . '?download=1');
+$pdfFilename = 'Laporan-' . $bundle['report']['report_code'] . '.pdf';
 ?>
 <?= view('Components/PageHeader', [
     'eyebrow' => 'Detail Laporan',
     'title' => $bundle['worker']['full_name'],
     'subtitle' => 'Laporan tanggal ' . date('d F Y', strtotime($bundle['report']['report_date'])),
-    'actionHref' => base_url('reports/pdf/' . $bundle['report']['id']),
-    'actionLabel' => 'Buka PDF',
+    'actionHref' => $pdfUrl,
+    'actionLabel' => 'Download PDF',
+    'actionText' => 'PDF',
     'actionIcon' => 'pdf',
+    'actionDownload' => $pdfFilename,
 ]) ?>
+
+<section class="InfoCard DetailPdfCard">
+    <div>
+        <strong>Format PDF laporan</strong>
+        <p>File PDF ini bisa didownload dan dikirim dari perangkat Anda.</p>
+    </div>
+    <button type="button" class="InlineAction" data-share-pdf-url="<?= esc($pdfUrl) ?>" data-share-pdf-name="<?= esc($pdfFilename) ?>">
+        <?= trace_icon('pdf') ?>
+        <span>Bagikan ke WhatsApp</span>
+    </button>
+</section>
 
 <?php if ($bundle['report']['status'] !== 'Submitted') : ?>
     <?= view('Components/AutoSendWAToggle', [
@@ -27,12 +42,20 @@ $displayWaSummary = trim((string) ($waSummary ?? ''));
     ]) ?>
 <?php endif; ?>
 
-<section class="SuccessCard">
+<section class="SuccessCard DetailSuccessCard">
     <div class="SuccessIcon">✓</div>
+    <button type="button" class="DetailCopyButton" data-copy-target="WhatsAppSummary" aria-label="Salin Laporan ini" title="Salin Laporan ini" data-copy-default-label="Salin Laporan ini" data-copy-success-label="Laporan tersalin">
+        <?= trace_icon('copy') ?>
+        <span>Salin Laporan ini</span>
+    </button>
     <strong><?= esc($bundle['report']['status']) === 'Submitted' ? 'Laporan berhasil dikirim' : 'Draft tersimpan' ?></strong>
     <p><?= esc($bundle['report']['report_code']) ?></p>
+    <div class="DetailWaHighlight">
+        <span>Ringkasan WhatsApp</span>
+        <p><?= esc($displayWaSummary !== '' ? character_limiter($displayWaSummary, 150) : 'Ringkasan WhatsApp akan terbentuk setelah submit final.') ?></p>
+    </div>
     <?php if (!empty($bundle['report']['edited_at'])) : ?>
-        <p style="margin-top: 8px; font-size: 0.8rem; color: #e67e22; font-weight: 600;">Diedit pada: <?= date('d M Y H:i', strtotime($bundle['report']['edited_at'])) ?></p>
+        <p class="DetailEditedNote">Diedit pada: <?= date('d M Y H:i', strtotime($bundle['report']['edited_at'])) ?></p>
     <?php endif; ?>
 </section>
 
@@ -201,23 +224,8 @@ $displayWaSummary = trim((string) ($waSummary ?? ''));
                     <span class="StructuredLabel">Bentuk Kendala</span>
                     <strong class="StructuredValue"><?= esc($bundle['obstacle']['obstacle_shape']) ?></strong>
                 </div>
-                <div class="StructuredRow">
-                    <span class="StructuredLabel">Penyebab Kendala</span>
-                    <strong class="StructuredValue"><?= esc($bundle['obstacle']['obstacle_cause']) ?></strong>
-                </div>
-                <div class="StructuredRow">
-                    <span class="StructuredLabel">Dampak Pekerjaan</span>
-                    <strong class="StructuredValue"><?= esc($bundle['obstacle']['obstacle_impact']) ?></strong>
-                </div>
             </div>
         </div>
-
-        <?php if ($bundle['obstacle']['additional_note'] !== '') : ?>
-            <div class="AccordionGroup">
-                <p class="AccordionGroupTitle">Catatan Tambahan</p>
-                <div class="StructuredNote"><?= nl2br(esc($bundle['obstacle']['additional_note'])) ?></div>
-            </div>
-        <?php endif; ?>
 
         <div class="AccordionGroup">
             <p class="AccordionGroupTitle">Rencana Pekerjaan Esok</p>
@@ -277,8 +285,9 @@ $displayWaSummary = trim((string) ($waSummary ?? ''));
     </summary>
     <div class="AccordionBody">
         <div class="AccordionActionRow">
-            <button type="button" class="InlineAction isIconOnly" data-copy-target="WhatsAppSummary" aria-label="Salin ringkasan WhatsApp" title="Salin ringkasan WhatsApp" data-copy-default-label="Salin ringkasan WhatsApp" data-copy-success-label="Ringkasan tersalin">
+            <button type="button" class="InlineAction" data-copy-target="WhatsAppSummary" aria-label="Salin Laporan ini" title="Salin Laporan ini" data-copy-default-label="Salin Laporan ini" data-copy-success-label="Laporan tersalin">
                 <?= trace_icon('copy') ?>
+                <span>Salin Laporan ini</span>
             </button>
         </div>
         <pre id="WhatsAppSummary" class="SummaryBox" style="white-space: pre-wrap; font-size: 13px; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: inherit; margin: 0; color: #1e293b;"><?= esc($displayWaSummary !== '' ? $displayWaSummary : 'Ringkasan WhatsApp akan terbentuk setelah submit final.') ?></pre>

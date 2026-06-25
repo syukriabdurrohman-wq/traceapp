@@ -7,18 +7,22 @@
     'subtitle' => 'Pastikan semua komponen laporan sudah sesuai sebelum final submit.',
     'actionHref' => base_url('reports/edit/' . $bundle['report']['id']),
     'actionLabel' => 'Ubah Draft',
+    'actionText' => 'Edit Laporan Disini',
     'actionIcon' => 'edit',
 ]) ?>
 
-<section class="MetricCard isAccent">
+<section class="MetricCard isAccent ReviewProgressCard">
     <span class="MetricLabel">Progress Checklist</span>
     <strong><?= esc((string) $summary['doneCount']) ?>/<?= esc((string) $summary['totalCount']) ?> lengkap</strong>
 </section>
 
 <section class="InfoCard">
-    <div class="CardHeading">
-        <h2>Ringkasan WhatsApp</h2>
-        <span>Preview hasil input Anda</span>
+    <div class="ReviewSummaryHeading">
+        <div class="ReviewSummaryTitle">
+            <span class="ReviewSummaryIcon" aria-hidden="true"><?= trace_icon('copy') ?></span>
+            <h2>Ringkasan WhatsApp</h2>
+        </div>
+        <p>Ringkasan ini bisa di Copy Paste ke WA setelah melakukan Submit Final</p>
     </div>
     <pre class="SummaryBox" style="white-space: pre-wrap; font-size: 13px; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-family: inherit; margin: 0; color: #1e293b;"><?= esc($waSummary) ?></pre>
 </section>

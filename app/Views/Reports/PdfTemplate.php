@@ -48,21 +48,11 @@ $splitTextLines = static function (?string $text): array {
 };
 
 $buildObstacleText = static function (array $obstacle) use ($formatValue): string {
-    $lines = [];
-
     if (trim((string) ($obstacle['obstacle_shape'] ?? '')) !== '') {
-        $lines[] = 'Bentuk: ' . $formatValue($obstacle['obstacle_shape']);
+        return $formatValue($obstacle['obstacle_shape']);
     }
 
-    if (trim((string) ($obstacle['obstacle_cause'] ?? '')) !== '') {
-        $lines[] = 'Penyebab: ' . $formatValue($obstacle['obstacle_cause']);
-    }
-
-    if (trim((string) ($obstacle['obstacle_impact'] ?? '')) !== '') {
-        $lines[] = 'Dampak: ' . $formatValue($obstacle['obstacle_impact']);
-    }
-
-    return $lines === [] ? '-' : implode("\n", $lines);
+    return '-';
 };
 
 $photoSources = [];
@@ -677,14 +667,12 @@ if ($photoCount <= 1) {
         <table class="DataTable">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Kendala</th>
-                    <th style="width: 50%;">Tindak Lanjut</th>
+                    <th>Kendala</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td><?= nl2br(esc($buildObstacleText($bundle['obstacle'] ?? []))) ?></td>
-                    <td><?= nl2br(esc($formatValue($bundle['obstacle']['additional_note'] ?? ''))) ?></td>
                 </tr>
             </tbody>
         </table>

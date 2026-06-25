@@ -80,16 +80,10 @@ class ReportSummaryService
             $this->value($material['summary_text'] ?? ''),
         ]);
 
-        $hasObstacle = trim((string) ($obstacle['obstacle_shape'] ?? '')) !== ''
-            || trim((string) ($obstacle['obstacle_cause'] ?? '')) !== ''
-            || trim((string) ($obstacle['obstacle_impact'] ?? '')) !== ''
-            || trim((string) ($obstacle['additional_note'] ?? '')) !== '';
+        $hasObstacle = trim((string) ($obstacle['obstacle_shape'] ?? '')) !== '';
 
         $this->appendSection($lines, 'KENDALA LAPANGAN', $hasObstacle ? [
             'Bentuk Kendala: ' . $this->value($obstacle['obstacle_shape'] ?? ''),
-            'Penyebab Kendala: ' . $this->value($obstacle['obstacle_cause'] ?? ''),
-            'Dampak Pekerjaan: ' . $this->value($obstacle['obstacle_impact'] ?? ''),
-            'Penjelasan Tambahan: ' . $this->value($obstacle['additional_note'] ?? ''),
         ] : ['Tidak ada kendala yang diinput.']);
 
         $this->appendSection($lines, 'RENCANA PEKERJAAN ESOK', [
@@ -119,12 +113,7 @@ class ReportSummaryService
 
     public function buildObstacleSummary(array $bundle): string
     {
-        return trim(implode(' ', array_filter([
-            'Bentuk: ' . $bundle['obstacle']['obstacle_shape'],
-            'Penyebab: ' . $bundle['obstacle']['obstacle_cause'],
-            'Dampak: ' . $bundle['obstacle']['obstacle_impact'],
-            $bundle['obstacle']['additional_note'] !== '' ? 'Catatan: ' . $bundle['obstacle']['additional_note'] : null,
-        ])));
+        return trim('Bentuk: ' . $bundle['obstacle']['obstacle_shape']);
     }
 
     private function appendSection(array &$lines, string $title, array $content): void

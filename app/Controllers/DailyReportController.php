@@ -139,10 +139,11 @@ class DailyReportController extends BaseController
         }
 
         $binary = $this->reportPdfService->render($bundle);
+        $disposition = $this->request->getGet('download') === '1' ? 'attachment' : 'inline';
 
         return $this->response
             ->setContentType('application/pdf')
-            ->setHeader('Content-Disposition', 'inline; filename="Laporan-' . $bundle['report']['report_code'] . '.pdf"')
+            ->setHeader('Content-Disposition', $disposition . '; filename="Laporan-' . $bundle['report']['report_code'] . '.pdf"')
             ->setBody($binary);
     }
 
@@ -156,9 +157,12 @@ class DailyReportController extends BaseController
         }
 
         $heavyEquipment = [];
+        $heavyEquipmentSelections = [];
         foreach ($bundle['heavyEquipment'] as $item) {
             if ($item['heavy_equipment_category_id'] !== null) {
                 $heavyEquipment[$item['heavy_equipment_category_id']] = $item['quantity'];
+                $labelParts = explode(' - ', (string) ($item['equipment_label'] ?? ''), 2);
+                $heavyEquipmentSelections[$item['heavy_equipment_category_id']] = $labelParts[1] ?? '';
             }
         }
 
@@ -183,6 +187,7 @@ class DailyReportController extends BaseController
             'realizationSummary' => $bundle['report']['realization_summary'],
             'realizationItems'   => $bundle['realizationItems'] ?? [],
             'heavyEquipment'     => $heavyEquipment,
+            'heavyEquipmentSelections' => $heavyEquipmentSelections,
             'heavyCustomRows'    => array_map(static fn (array $item): array => [
                 'label'    => $item['equipment_label'] ?? '',
                 'quantity' => $item['quantity'] ?? '',

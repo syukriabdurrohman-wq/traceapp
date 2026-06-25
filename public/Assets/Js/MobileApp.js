@@ -211,6 +211,38 @@
         });
     };
 
+    const initPdfShareButtons = () => {
+        document.querySelectorAll('[data-share-pdf-url]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const url = button.getAttribute('data-share-pdf-url');
+                const fileName = button.getAttribute('data-share-pdf-name') || 'laporan.pdf';
+
+                if (!url) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(url, { credentials: 'same-origin' });
+                    const blob = await response.blob();
+                    const file = new File([blob], fileName, { type: 'application/pdf' });
+
+                    if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+                        await navigator.share({
+                            files: [file],
+                            title: fileName,
+                            text: 'Laporan format PDF',
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('Gagal membagikan PDF', error);
+                }
+
+                window.location.href = url;
+            });
+        });
+    };
+
     const initOvertimeToggle = () => {
         const toggle = document.getElementById('OvertimeToggle');
         const fields = document.getElementById('OvertimeFields');
@@ -230,6 +262,10 @@
     const initConditionalCurrentLocation = () => {
         const select = document.getElementById('CurrentLocationSelect');
         const field = document.getElementById('CurrentLocationManualField');
+        const structureLocationField = document.getElementById('StructureLocationField');
+        const structureLocationSelect = document.getElementById('StructureLocationSelect');
+        const structurePointField = document.getElementById('StructurePointField');
+        const structurePointInput = document.getElementById('StructurePointInput');
 
         if (!select || !field) {
             return;
@@ -238,12 +274,31 @@
         const input = field.querySelector('input');
         const sync = () => {
             const visible = select.value === 'Lainnya';
+            const structureVisible = select.value === 'Area Laut';
             field.style.display = visible ? 'grid' : 'none';
             if (input) {
                 input.disabled = !visible;
                 input.required = visible;
                 if (!visible) {
                     input.value = '';
+                }
+            }
+
+            if (structureLocationField && structureLocationSelect) {
+                structureLocationField.style.display = structureVisible ? 'grid' : 'none';
+                structureLocationSelect.disabled = !structureVisible;
+                structureLocationSelect.required = structureVisible;
+                if (!structureVisible) {
+                    structureLocationSelect.value = '';
+                }
+            }
+
+            if (structurePointField && structurePointInput) {
+                structurePointField.style.display = structureVisible ? 'grid' : 'none';
+                structurePointInput.disabled = !structureVisible;
+                structurePointInput.required = structureVisible;
+                if (!structureVisible) {
+                    structurePointInput.value = '';
                 }
             }
         };
@@ -298,11 +353,173 @@
                     });
                     container.insertBefore(clone, addButton);
                     reindex();
+                    container.dispatchEvent(new CustomEvent('dynamic-row-added', { bubbles: true }));
                 }
             });
 
             reindex();
         });
+    };
+
+    const initRealizationRows = () => {
+        const container = document.querySelector('[data-dynamic-rows="realizationItems"]');
+
+        if (!container) {
+            return;
+        }
+
+        const readNumber = (value) => {
+            const match = String(value || '').replace(/\s+/g, '').match(/-?\d+(?:[.,]\d+)?/);
+
+            if (!match) {
+                return null;
+            }
+
+            const parsed = Number(match[0].replace(',', '.'));
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+
+        const formatNumber = (value) => {
+            if (!Number.isFinite(value)) {
+                return '';
+            }
+
+            return String(Number(value.toFixed(4))).replace('.', ',');
+        };
+
+        const syncDeviation = (row) => {
+            const planInput = row.querySelector('[data-plan-input]');
+            const realizationInput = row.querySelector('[data-realization-input]');
+            const deviationInput = row.querySelector('[data-deviation-input]');
+
+            if (!planInput || !realizationInput || !deviationInput) {
+                return;
+            }
+
+            const plan = readNumber(planInput.value);
+            const realization = readNumber(realizationInput.value);
+            deviationInput.value = plan === null || realization === null ? '' : formatNumber(realization - plan);
+        };
+
+        const syncPartner = (row) => {
+            const select = row.querySelector('[data-partner-select]');
+            const manualField = row.querySelector('[data-partner-manual-field]');
+            const manualInput = row.querySelector('[data-partner-manual-input]');
+
+            if (!select || !manualField || !manualInput) {
+                return;
+            }
+
+            const isManual = select.value === 'Lainnya';
+            manualField.style.display = isManual ? 'grid' : 'none';
+            manualInput.disabled = !isManual;
+            manualInput.required = isManual;
+
+            if (!isManual) {
+                manualInput.value = '';
+            }
+        };
+
+        const syncRow = (row) => {
+            syncDeviation(row);
+            syncPartner(row);
+        };
+
+        const syncAll = () => {
+            container.querySelectorAll('[data-dynamic-row]').forEach((row) => syncRow(row));
+        };
+
+        container.addEventListener('input', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const row = target?.closest('[data-dynamic-row]');
+
+            if (row && (target.matches('[data-plan-input]') || target.matches('[data-realization-input]'))) {
+                syncDeviation(row);
+            }
+        });
+
+        container.addEventListener('change', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const row = target?.closest('[data-dynamic-row]');
+
+            if (row && target.matches('[data-partner-select]')) {
+                syncPartner(row);
+            }
+        });
+
+        container.addEventListener('dynamic-row-added', syncAll);
+        document.addEventListener('report-draft-restored', syncAll);
+        syncAll();
+    };
+
+    const initHeavyEquipmentFields = () => {
+        const syncField = (select) => {
+            const wrapper = select.closest('.BoxedCounterField');
+            const manualInput = wrapper?.querySelector('[data-heavy-manual]');
+
+            if (!manualInput) {
+                return;
+            }
+
+            const isManual = select.value === 'Lainnya';
+            manualInput.style.display = isManual ? 'block' : 'none';
+            manualInput.disabled = !isManual;
+            manualInput.required = isManual;
+
+            if (!isManual) {
+                manualInput.value = '';
+            }
+        };
+
+        const syncAll = () => {
+            document.querySelectorAll('[data-heavy-select]').forEach((select) => syncField(select));
+        };
+
+        document.addEventListener('change', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+
+            if (target?.matches('[data-heavy-select]')) {
+                syncField(target);
+            }
+        });
+
+        document.addEventListener('report-draft-restored', syncAll);
+        syncAll();
+    };
+
+    const initLightToolFields = () => {
+        const syncField = (select) => {
+            const wrapper = select.closest('.BoxedCounterField');
+            const manualInput = wrapper?.querySelector('[data-light-manual]');
+
+            if (!manualInput) {
+                return;
+            }
+
+            const isManual = select.value === 'Lainnya';
+            manualInput.style.display = isManual ? 'block' : 'none';
+            manualInput.disabled = !isManual;
+            manualInput.required = isManual;
+
+            if (!isManual) {
+                manualInput.value = '';
+            }
+        };
+
+        const syncAll = () => {
+            document.querySelectorAll('[data-light-select]').forEach((select) => syncField(select));
+        };
+
+        document.addEventListener('change', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+
+            if (target?.matches('[data-light-select]')) {
+                syncField(target);
+            }
+        });
+
+        document.addEventListener('report-draft-restored', syncAll);
+        syncAll();
     };
 
     const initBannerCarousel = () => {
@@ -575,6 +792,7 @@
                 form.querySelectorAll('select').forEach((select) => {
                     select.dispatchEvent(new Event('change', { bubbles: true }));
                 });
+                document.dispatchEvent(new CustomEvent('report-draft-restored'));
             } catch (error) {
                 console.warn('Gagal memulihkan auto draft lokal', error);
             }
@@ -887,9 +1105,13 @@
         initInstallPrompt();
         initPhotoPreview();
         initCopyButtons();
+        initPdfShareButtons();
         initOvertimeToggle();
         initConditionalCurrentLocation();
         initDynamicRows();
+        initRealizationRows();
+        initHeavyEquipmentFields();
+        initLightToolFields();
         initBannerCarousel();
         initQuickMenuToggle();
         initStatusToggle();

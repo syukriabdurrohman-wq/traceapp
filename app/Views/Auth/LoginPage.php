@@ -113,9 +113,10 @@
     }
 
     .LoginInlineBrand span {
-        max-width: 220px;
-        font-size: 0.8rem;
-        line-height: 1.55;
+        max-width: min(94vw, 420px);
+        font-size: clamp(0.78rem, 2.9vw, 0.96rem);
+        line-height: 1.35;
+        white-space: nowrap;
         color: rgba(255, 255, 255, 0.88);
     }
 
@@ -274,6 +275,7 @@
 
     .LoginInlineSignupLogo img.LoginInlineProjectLogoSmall {
         width: min(82px, 26vw);
+        margin-top: 16px;
     }
 
     .LoginInlineProjectName {
