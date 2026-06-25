@@ -420,8 +420,28 @@
             }
         };
 
+        const syncWorkItem = (row) => {
+            const select = row.querySelector('[data-work-item-select]');
+            const manualField = row.querySelector('[data-work-item-manual-field]');
+            const manualInput = row.querySelector('[data-work-item-manual-input]');
+
+            if (!select || !manualField || !manualInput) {
+                return;
+            }
+
+            const isManual = select.value === 'Lainnya';
+            manualField.style.display = isManual ? 'grid' : 'none';
+            manualInput.disabled = !isManual;
+            manualInput.required = isManual;
+
+            if (!isManual) {
+                manualInput.value = '';
+            }
+        };
+
         const syncRow = (row) => {
             syncDeviation(row);
+            syncWorkItem(row);
             syncPartner(row);
         };
 
@@ -444,6 +464,10 @@
 
             if (row && target.matches('[data-partner-select]')) {
                 syncPartner(row);
+            }
+
+            if (row && target.matches('[data-work-item-select]')) {
+                syncWorkItem(row);
             }
         });
 

@@ -588,7 +588,7 @@ class DailyReportService
     {
         $items = [];
         foreach (($payload['realizationItems'] ?? []) as $row) {
-            $workItem = trim((string) ($row['work_item'] ?? ''));
+            $workItem = $this->resolveRealizationWorkItem($row);
             if ($workItem === '') {
                 continue;
             }
@@ -604,6 +604,17 @@ class DailyReportService
         }
 
         return $items;
+    }
+
+    private function resolveRealizationWorkItem(array $row): string
+    {
+        $workItem = trim((string) ($row['work_item'] ?? ''));
+
+        if ($workItem === 'Lainnya') {
+            return trim((string) ($row['work_item_manual'] ?? ''));
+        }
+
+        return $workItem;
     }
 
     private function calculateDeviationText(array $row): string
@@ -672,13 +683,28 @@ class DailyReportService
         }
 
         foreach ($dropdownLabels as $slug => $label) {
-            $selection = trim((string) ($payload['lightToolSelections'][$slug] ?? ''));
+            $selections = $payload['lightToolSelections'][$slug] ?? [];
+            $manualSelections = $payload['lightToolManual'][$slug] ?? [];
 
-            if ($selection === 'Lainnya') {
-                $selection = trim((string) ($payload['lightToolManual'][$slug] ?? ''));
+            if (! is_array($selections)) {
+                $selections = [$selections];
             }
 
-            if ($selection !== '') {
+            if (! is_array($manualSelections)) {
+                $manualSelections = [$manualSelections];
+            }
+
+            foreach (array_values($selections) as $index => $rawSelection) {
+                $selection = trim((string) $rawSelection);
+
+                if ($selection === 'Lainnya') {
+                    $selection = trim((string) ($manualSelections[$index] ?? ''));
+                }
+
+                if ($selection === '') {
+                    continue;
+                }
+
                 $items[] = [
                     'tool_label' => $label . ' - ' . $selection,
                     'volume'     => '1',

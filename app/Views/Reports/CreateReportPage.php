@@ -21,6 +21,7 @@ $currentLocationValue = old('currentLocation', $formData['currentLocation'] ?? '
 $isCustomCurrentLocation = $currentLocationValue !== '' && ! in_array($currentLocationValue, $currentLocationOptions, true);
 $currentLocationSelectValue = $isCustomCurrentLocation ? 'Lainnya' : $currentLocationValue;
 $currentLocationManualValue = old('currentLocationManual', $isCustomCurrentLocation ? $currentLocationValue : '');
+$workItemOptions = ['Preboring', 'Cleaning Core', 'Cleaning Rock', 'Install Casing', 'Bracing', 'Pengecoran'];
 $partnerOptions = ['RPI', 'Berdikari'];
 $heavyDropdownOptions = [
     'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
@@ -76,7 +77,7 @@ if ($lightToolCounts === [] && $lightToolSelections === [] && $lightTools !== []
             $prefix = $config['label'] . ' - ';
             if (str_starts_with($toolLabel, $prefix)) {
                 $selection = trim(substr($toolLabel, strlen($prefix)));
-                $lightToolSelections[$slug] = $selection;
+                $lightToolSelections[$slug][] = $selection;
                 $matched = true;
                 break;
             }
@@ -141,6 +142,29 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
 
     .BoxedCounterField .HeavyManualInput {
         margin-top: 8px;
+    }
+
+    .LightToolMultiCard {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .LightToolMultiCard > strong {
+        color: #374151;
+        font-size: 0.78rem;
+    }
+
+    .LightToolMultiGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    @media (min-width: 720px) {
+        .LightToolMultiGrid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
     }
 
     .StickyActionBar.isWizard {
@@ -348,6 +372,10 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         <div class="DynamicRows" data-dynamic-rows="realizationItems">
             <?php foreach ($realizationItems as $index => $item) : ?>
                 <?php
+                $workItemValue = trim((string) ($item['work_item'] ?? ''));
+                $workItemManualValue = trim((string) ($item['work_item_manual'] ?? ''));
+                $workItemSelectValue = in_array($workItemValue, $workItemOptions, true) ? $workItemValue : ($workItemValue !== '' || $workItemManualValue !== '' ? 'Lainnya' : '');
+                $workItemManualValue = $workItemManualValue !== '' ? $workItemManualValue : ($workItemSelectValue === 'Lainnya' ? $workItemValue : '');
                 $partnerValue = trim((string) ($item['partner'] ?? ''));
                 $partnerManualValue = trim((string) ($item['partner_manual'] ?? ''));
                 $partnerSelectValue = in_array($partnerValue, $partnerOptions, true) ? $partnerValue : ($partnerValue !== '' || $partnerManualValue !== '' ? 'Lainnya' : '');
@@ -356,7 +384,19 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
                 <div class="DynamicRow" data-dynamic-row>
                     <label class="FieldBlock">
                         <span>Deskripsi Pekerjaan</span>
-                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][work_item]" value="<?= esc($item['work_item'] ?? '') ?>" placeholder="Deskripsi pekerjaan">
+                        <select name="realizationItems[<?= esc((string) $index) ?>][work_item]" data-work-item-select>
+                            <option value="">Pilih deskripsi pekerjaan</option>
+                            <?php foreach ($workItemOptions as $workItemOption) : ?>
+                                <option value="<?= esc($workItemOption) ?>" <?= $workItemSelectValue === $workItemOption ? 'selected' : '' ?>>
+                                    <?= esc($workItemOption) ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="Lainnya" <?= $workItemSelectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                        </select>
+                    </label>
+                    <label class="FieldBlock" data-work-item-manual-field>
+                        <span>Deskripsi Pekerjaan Lainnya</span>
+                        <input type="text" name="realizationItems[<?= esc((string) $index) ?>][work_item_manual]" value="<?= esc($workItemManualValue) ?>" placeholder="Isi deskripsi pekerjaan lainnya" data-work-item-manual-input>
                     </label>
                     <label class="FieldBlock">
                         <span>Satuan</span>
@@ -514,28 +554,42 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
                 </label>
             <?php endforeach; ?>
 
-            <?php foreach ($lightDropdownOptions as $slug => $config) : ?>
-                <?php
-                $selectionValue = trim((string) ($lightToolSelections[$slug] ?? ''));
-                $manualValue = trim((string) ($lightToolManual[$slug] ?? ''));
-                $selectValue = in_array($selectionValue, $config['options'], true) ? $selectionValue : ($selectionValue !== '' || $manualValue !== '' ? 'Lainnya' : '');
-                $manualValue = $manualValue !== '' ? $manualValue : ($selectValue === 'Lainnya' ? $selectionValue : '');
-                ?>
-                <label class="BoxedCounterField">
-                    <span><?= esc($config['label']) ?></span>
-                    <select name="lightToolSelections[<?= esc($slug) ?>]" data-light-select>
-                        <option value="">Pilih <?= esc($config['label']) ?></option>
-                        <?php foreach ($config['options'] as $option) : ?>
-                            <option value="<?= esc($option) ?>" <?= $selectValue === $option ? 'selected' : '' ?>>
-                                <?= esc($option) ?>
-                            </option>
-                        <?php endforeach; ?>
-                        <option value="Lainnya" <?= $selectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
-                    </select>
-                    <input class="HeavyManualInput" type="text" name="lightToolManual[<?= esc($slug) ?>]" value="<?= esc($manualValue) ?>" placeholder="Isi <?= esc($config['label']) ?> lainnya" data-light-manual>
-                </label>
-            <?php endforeach; ?>
         </div>
+
+        <?php foreach ($lightDropdownOptions as $slug => $config) : ?>
+            <?php
+            $selectionValues = $lightToolSelections[$slug] ?? [];
+            $manualValues = $lightToolManual[$slug] ?? [];
+            $selectionValues = is_array($selectionValues) ? array_values($selectionValues) : [$selectionValues];
+            $manualValues = is_array($manualValues) ? array_values($manualValues) : [$manualValues];
+            ?>
+            <div class="LightToolMultiCard">
+                <strong><?= esc($config['label']) ?></strong>
+                <div class="LightToolMultiGrid">
+                    <?php for ($slotIndex = 0; $slotIndex < 4; $slotIndex++) : ?>
+                        <?php
+                        $selectionValue = trim((string) ($selectionValues[$slotIndex] ?? ''));
+                        $manualValue = trim((string) ($manualValues[$slotIndex] ?? ''));
+                        $selectValue = in_array($selectionValue, $config['options'], true) ? $selectionValue : ($selectionValue !== '' || $manualValue !== '' ? 'Lainnya' : '');
+                        $manualValue = $manualValue !== '' ? $manualValue : ($selectValue === 'Lainnya' ? $selectionValue : '');
+                        ?>
+                        <label class="BoxedCounterField">
+                            <span><?= esc($config['label']) ?> <?= esc((string) ($slotIndex + 1)) ?></span>
+                            <select name="lightToolSelections[<?= esc($slug) ?>][<?= esc((string) $slotIndex) ?>]" data-light-select>
+                                <option value="">Pilih diameter</option>
+                                <?php foreach ($config['options'] as $option) : ?>
+                                    <option value="<?= esc($option) ?>" <?= $selectValue === $option ? 'selected' : '' ?>>
+                                        <?= esc($option) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                                <option value="Lainnya" <?= $selectValue === 'Lainnya' ? 'selected' : '' ?>>Lainnya</option>
+                            </select>
+                            <input class="HeavyManualInput" type="text" name="lightToolManual[<?= esc($slug) ?>][<?= esc((string) $slotIndex) ?>]" value="<?= esc($manualValue) ?>" placeholder="Isi diameter lainnya" data-light-manual>
+                        </label>
+                    <?php endfor; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
 
         <div class="DynamicRows" data-dynamic-rows="lightTools">
             <p class="AccordionGroupTitle">Alat Ringan Lainnya</p>
