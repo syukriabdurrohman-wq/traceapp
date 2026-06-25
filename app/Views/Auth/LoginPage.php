@@ -275,7 +275,7 @@
 
     .LoginInlineSignupLogo img.LoginInlineProjectLogoSmall {
         width: min(82px, 26vw);
-        margin-top: 16px;
+        margin-top: 46px;
     }
 
     .LoginInlineProjectName {
