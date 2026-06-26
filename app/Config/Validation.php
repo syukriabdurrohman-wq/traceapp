@@ -63,7 +63,7 @@ class Validation extends BaseConfig
         'structureLocation'  => 'permit_empty|in_list[PL1,PL2,P23,P24,P25,P26,P27,P28,P29,P30,P32,P33,P34,Fender PL1,Fender PL2,Fender P22,Fender P23]',
         'structurePoint'     => 'permit_empty|min_length[1]|max_length[120]',
         'areaCode'           => 'required|in_list[AreaLanal,AreaSwangi,AreaRpi,AreaLaut,Lainnya]',
-        'weatherCode'        => 'required|in_list[Cerah,Mendung,Hujan,Badai]',
+        'weatherCode'        => 'required|in_list[Cerah,Mendung,Gerimis,Hujan,Badai]',
         'realizationSummary' => 'permit_empty|max_length[5000]',
         'lightToolSummary'   => 'permit_empty|max_length[5000]',
         'materialSummary'    => 'permit_empty|min_length[5]|max_length[5000]',

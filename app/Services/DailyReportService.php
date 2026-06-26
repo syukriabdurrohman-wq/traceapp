@@ -32,6 +32,13 @@ class DailyReportService
 
     public function getFormOptions(): array
     {
+        $workerCategories = array_map(
+            fn (array $category): array => array_replace($category, [
+                'name' => $this->normalizeWorkerCategoryName((string) ($category['name'] ?? '')),
+            ]),
+            $this->workerCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll()
+        );
+
         return [
             'areas' => [
                 ['code' => 'AreaLanal', 'label' => 'Area Lanal'],
@@ -44,6 +51,7 @@ class DailyReportService
             'structureLocations' => [
                 'PL1',
                 'PL2',
+                'P22',
                 'P23',
                 'P24',
                 'P25',
@@ -52,6 +60,7 @@ class DailyReportService
                 'P28',
                 'P29',
                 'P30',
+                'P31',
                 'P32',
                 'P33',
                 'P34',
@@ -60,11 +69,21 @@ class DailyReportService
                 'Fender P22',
                 'Fender P23',
             ],
-            'weatherOptions' => ['Cerah', 'Mendung', 'Hujan', 'Badai'],
+            'weatherOptions' => ['Cerah', 'Mendung', 'Gerimis', 'Hujan', 'Badai'],
             'workerUsers'    => $this->userModel->getActiveReportUsers(),
-            'workerCategories' => $this->workerCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll(),
+            'workerCategories' => $workerCategories,
             'heavyCategories'  => $this->heavyEquipmentCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll(),
         ];
+    }
+
+    private function normalizeWorkerCategoryName(string $name): string
+    {
+        return match ($name) {
+            'Survey' => 'Surveyor',
+            'Pekerja Harian' => 'Operator',
+            'Tukang' => 'Welder',
+            default => $name,
+        };
     }
 
     public function getReports(array $filters = []): array
@@ -469,7 +488,7 @@ class DailyReportService
             if ($quantity > 0) {
                 $items[] = [
                     'category_id' => (int) $category['id'],
-                    'label'       => $category['name'],
+                    'label'       => $this->normalizeWorkerCategoryName((string) $category['name']),
                     'quantity'    => $quantity,
                 ];
             }

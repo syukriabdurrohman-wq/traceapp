@@ -16,12 +16,36 @@ $lightToolCounts  = old('lightToolCounts', $formData['lightToolCounts'] ?? []);
 $lightToolSelections = old('lightToolSelections', $formData['lightToolSelections'] ?? []);
 $lightToolManual  = old('lightToolManual', $formData['lightToolManual'] ?? []);
 $currentLocationOptions = $formOptions['currentLocations'] ?? ['Area Laut', 'Area Swangi', 'Area Lanal', 'Area RPI', 'Lainnya'];
-$structureLocationOptions = $formOptions['structureLocations'] ?? ['PL1', 'PL2', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P32', 'P33', 'P34', 'Fender PL1', 'Fender PL2', 'Fender P22', 'Fender P23'];
+$structureLocationOptions = $formOptions['structureLocations'] ?? ['PL1', 'PL2', 'P22', 'P23', 'P24', 'P25', 'P26', 'P27', 'P28', 'P29', 'P30', 'P31', 'P32', 'P33', 'P34', 'Fender PL1', 'Fender PL2', 'Fender P22', 'Fender P23'];
 $currentLocationValue = old('currentLocation', $formData['currentLocation'] ?? '');
 $isCustomCurrentLocation = $currentLocationValue !== '' && ! in_array($currentLocationValue, $currentLocationOptions, true);
 $currentLocationSelectValue = $isCustomCurrentLocation ? 'Lainnya' : $currentLocationValue;
 $currentLocationManualValue = old('currentLocationManual', $isCustomCurrentLocation ? $currentLocationValue : '');
-$workItemOptions = ['Preboring', 'Cleaning Core', 'Cleaning Rock', 'Install Casing', 'Bracing', 'Pengecoran'];
+$workItemOptions = [
+    'Pekerjaan Preboring',
+    'Pekerjaan Cleaning Core',
+    'Pekerjaan Cleaning Rock',
+    'Pekerjaan Install & Pancang Casing',
+    'Pekerjaan Bracing',
+    'Pekerjaan Pengecoran',
+    'Pekerjaan Pilecap',
+    'Pekerjaan Kolom',
+    'Pekerjaan Pierhead',
+    'Pekerjaan Bearing Pad',
+    'Pekerjaan Cross Beam',
+    'Pekerjaan Deck',
+    'Pekerjaan Perbaikan Alat & Iddle Alat',
+];
+$workItemAliases = [
+    'Preboring' => 'Pekerjaan Preboring',
+    'Cleaning Core' => 'Pekerjaan Cleaning Core',
+    'Cleaning Rock' => 'Pekerjaan Cleaning Rock',
+    'Install Casing' => 'Pekerjaan Install & Pancang Casing',
+    'Bracing' => 'Pekerjaan Bracing',
+    'Pengecoran' => 'Pekerjaan Pengecoran',
+    'Pekerjaan Bearding Pad' => 'Pekerjaan Bearing Pad',
+    'Pekerjaan Barcing' => 'Pekerjaan Bracing',
+];
 $partnerOptions = ['RPI', 'Berdikari'];
 $heavyDropdownOptions = [
     'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
@@ -224,6 +248,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         color: #e11d48;
         font-weight: 600;
     }
+
 </style>
 
 <?= view('Components/PageHeader', [
@@ -374,6 +399,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
                 <?php
                 $workItemValue = trim((string) ($item['work_item'] ?? ''));
                 $workItemManualValue = trim((string) ($item['work_item_manual'] ?? ''));
+                $workItemValue = $workItemAliases[$workItemValue] ?? $workItemValue;
                 $workItemSelectValue = in_array($workItemValue, $workItemOptions, true) ? $workItemValue : ($workItemValue !== '' || $workItemManualValue !== '' ? 'Lainnya' : '');
                 $workItemManualValue = $workItemManualValue !== '' ? $workItemManualValue : ($workItemSelectValue === 'Lainnya' ? $workItemValue : '');
                 $partnerValue = trim((string) ($item['partner'] ?? ''));

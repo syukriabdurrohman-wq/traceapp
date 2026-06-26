@@ -120,6 +120,15 @@
         color: rgba(255, 255, 255, 0.88);
     }
 
+    .LoginInlinePoweredBy {
+        width: min(180px, 64vw);
+        max-height: 48px;
+        margin-top: 2px;
+        object-fit: contain;
+        background: transparent;
+        filter: none;
+    }
+
     .LoginInlineWave {
         position: absolute;
         left: -6%;
@@ -273,11 +282,6 @@
         object-fit: contain;
     }
 
-    .LoginInlineSignupLogo img.LoginInlineProjectLogoSmall {
-        width: min(82px, 26vw);
-        margin-top: 46px;
-    }
-
     .LoginInlineProjectName {
         width: min(360px, 92vw);
         margin: 0;
@@ -320,6 +324,7 @@
             <img src="<?= trace_logo_url() ?>" alt="<?= esc(trace_app_name()) ?>" class="LoginInlineLogo">
             <strong><?= esc(trace_app_name()) ?></strong>
             <span><?= esc(trace_app_tagline()) ?></span>
+            <img src="<?= base_url('Assets/Image/Powered_by.png?v=' . filemtime(FCPATH . 'Assets/Image/Powered_by.png')) ?>" alt="Powered by" class="LoginInlinePoweredBy">
         </div>
         <br>
         <div class="LoginInlineWave"></div>
@@ -370,7 +375,6 @@
         <div class="LoginInlineSignupLogo">
             <img src="<?= base_url('Assets/Image/Logo_KSO.png') ?>" alt="Logo">
             <p class="LoginInlineProjectName">Proyek Jembatan Penghubung Pulau Laut - Pulau Kalimantan</p>
-            <img src="<?= base_url('Assets/Image/Powered_by.png') ?>" alt="Logo proyek" class="LoginInlineProjectLogoSmall">
         </div>
         <?php endif; ?>
 

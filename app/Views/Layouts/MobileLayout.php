@@ -7,6 +7,9 @@
     $swVersion = @filemtime(FCPATH . 'service-worker.js') ?: time();
     $aosCssVersion = @filemtime(FCPATH . 'Assets/Vendor/AOS/aos.css') ?: $cssVersion;
     $aosJsVersion = @filemtime(FCPATH . 'Assets/Vendor/AOS/aos.js') ?: $jsVersion;
+    $currentUriPathForLayout = trim((string) ($currentUriPath ?? ''), '/');
+    $isReportCreatePage = str_starts_with($currentUriPathForLayout, 'reports/create');
+    $ksoLogoVersion = @filemtime(FCPATH . 'Assets/Image/Logo_KSO.png') ?: $cssVersion;
     ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -25,12 +28,12 @@
     <link rel="stylesheet" href="<?= base_url('Assets/Vendor/AOS/aos.css?v=' . $aosCssVersion) ?>">
     <link rel="stylesheet" href="<?= base_url('Assets/Css/MobileApp.css?v=' . $cssVersion) ?>">
 </head>
-<body class="MobileBody <?= esc($pageClass ?? '') ?>" data-page-class="<?= esc($pageClass ?? '') ?>">
+<body class="MobileBody <?= esc($pageClass ?? '') ?> <?= $isReportCreatePage ? 'ReportCreatePage' : '' ?>" data-page-class="<?= esc($pageClass ?? '') ?>">
     <div class="AmbientBackground"></div>
     <div class="DeviceWrap">
         <div class="MobileFrame">
             <?php if (($isAuthenticated ?? false) === true) : ?>
-                <?= view('Components/TopBar', ['currentUser' => $currentUser ?? null]) ?>
+                <?= view('Components/TopBar', ['currentUser' => $currentUser ?? null, 'currentUriPath' => $currentUriPath ?? '']) ?>
             <?php endif; ?>
 
             <main class="MobileShell">
@@ -39,6 +42,11 @@
             </main>
 
             <?php if (($isAuthenticated ?? false) === true) : ?>
+                <?php if ($isReportCreatePage) : ?>
+                    <div class="ReportCreateFooterLogo" aria-label="Logo KSO">
+                        <img src="<?= base_url('Assets/Image/Logo_KSO.png?v=' . $ksoLogoVersion) ?>" alt="Logo KSO">
+                    </div>
+                <?php endif; ?>
                 <?= view('Components/BottomNavigation', ['items' => $bottomNavigation ?? [], 'currentUriPath' => $currentUriPath ?? '']) ?>
             <?php endif; ?>
         </div>

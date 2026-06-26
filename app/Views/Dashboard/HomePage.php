@@ -32,7 +32,7 @@ $secondaryMenuItems = array_slice($menuItems, 7);
 </section>
 
 <section class="DashboardPrimaryAction">
-    <a href="<?= base_url('reports/create') ?>" class="PrimaryButton">Isi</a>
+    <a href="<?= base_url('reports/create') ?>" class="PrimaryButton isHomeCta">ISI DISINI</a>
 </section>
 <br>
 <section class="CompactStatGrid">

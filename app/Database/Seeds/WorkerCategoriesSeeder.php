@@ -17,11 +17,11 @@ class WorkerCategoriesSeeder extends Seeder
             ['name' => 'Peralatan', 'slug' => 'peralatan', 'sort_order' => 5, 'is_active' => 1],
             ['name' => 'HSE', 'slug' => 'hse', 'sort_order' => 6, 'is_active' => 1],
             ['name' => 'QA / QC', 'slug' => 'qa-qc', 'sort_order' => 7, 'is_active' => 1],
-            ['name' => 'Survey', 'slug' => 'survey', 'sort_order' => 8, 'is_active' => 1],
+            ['name' => 'Surveyor', 'slug' => 'survey', 'sort_order' => 8, 'is_active' => 1],
             ['name' => 'Mekanik & Elektrikal', 'slug' => 'mekanik-elektrikal', 'sort_order' => 9, 'is_active' => 1],
             ['name' => 'Pekerja Subkon / Vendor', 'slug' => 'pekerja-subkon-vendor', 'sort_order' => 10, 'is_active' => 1],
-            ['name' => 'Pekerja Harian', 'slug' => 'pekerja-harian', 'sort_order' => 11, 'is_active' => 1],
-            ['name' => 'Tukang', 'slug' => 'tukang', 'sort_order' => 12, 'is_active' => 1],
+            ['name' => 'Operator', 'slug' => 'pekerja-harian', 'sort_order' => 11, 'is_active' => 1],
+            ['name' => 'Welder', 'slug' => 'tukang', 'sort_order' => 12, 'is_active' => 1],
         ];
 
         foreach ($rows as $row) {
