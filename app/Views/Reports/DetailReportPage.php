@@ -19,8 +19,9 @@ $pdfFilename = 'Laporan-' . $bundle['report']['report_code'] . '.pdf';
     'title' => $bundle['worker']['full_name'],
     'subtitle' => 'Laporan tanggal ' . date('d F Y', strtotime($bundle['report']['report_date'])),
     'actionHref' => $pdfUrl,
-    'actionLabel' => 'Download PDF',
+    'actionLabel' => 'Download hasil laporan PDF',
     'actionText' => 'PDF',
+    'actionHint' => 'Download',
     'actionIcon' => 'pdf',
     'actionDownload' => $pdfFilename,
 ]) ?>

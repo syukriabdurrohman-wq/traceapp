@@ -374,7 +374,7 @@
         </div>
         <div class="LoginInlineSignupLogo">
             <img src="<?= base_url('Assets/Image/Logo_KSO.png') ?>" alt="Logo">
-            <p class="LoginInlineProjectName">Proyek Jembatan Penghubung Pulau Laut - Pulau Kalimantan</p>
+            <p class="LoginInlineProjectName">Pembangunan Jembatan Penghubung Pulau Kalimantan - Pulau Laut</p>
         </div>
         <?php endif; ?>
 

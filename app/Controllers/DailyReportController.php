@@ -59,6 +59,10 @@ class DailyReportController extends BaseController
         $result = $this->dailyReportService->saveDraftFromRequest($payload, $files, $actor);
 
         if (! $result['success']) {
+            if (! empty($result['reportId'])) {
+                return redirect()->to(base_url('reports/edit/' . $result['reportId']))->withInput()->with('errors', $result['errors']);
+            }
+
             return redirect()->back()->withInput()->with('errors', $result['errors']);
         }
 

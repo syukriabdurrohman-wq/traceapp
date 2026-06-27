@@ -116,14 +116,20 @@ class DailyReportService
 
         $validation = service('validation');
         $rules      = config(\Config\Validation::class)->dailyReport;
+        $uploadedPhotos = $this->filterPhotoInputs($files['photos'] ?? []);
+        $photoError = $this->validateUploadedPhotos($uploadedPhotos);
+
+        if ($photoError !== null) {
+            return ['success' => false, 'errors' => ['photos' => $photoError]];
+        }
 
         if (! $validation->setRules($rules)->run($payload)) {
-            return ['success' => false, 'errors' => $validation->getErrors()];
+            return $this->failAndPreservePhotos($validation->getErrors(), $payload, $uploadedPhotos, $actor);
         }
 
         $currentLocation = $this->resolveCurrentLocation($payload);
         if ($currentLocation === '') {
-            return ['success' => false, 'errors' => ['currentLocationManual' => 'Lokasi terkini manual wajib diisi jika memilih Lainnya.']];
+            return $this->failAndPreservePhotos(['currentLocationManual' => 'Lokasi terkini manual wajib diisi jika memilih Lainnya.'], $payload, $uploadedPhotos, $actor);
         }
 
         $requiresStructure = trim((string) ($payload['currentLocation'] ?? '')) === 'Area Laut';
@@ -141,7 +147,7 @@ class DailyReportService
                 $errors['structurePoint'] = 'Titik struktur wajib diisi jika Lokasi Terkini Area Laut.';
             }
 
-            return ['success' => false, 'errors' => $errors];
+            return $this->failAndPreservePhotos($errors, $payload, $uploadedPhotos, $actor);
         }
 
         if (! $requiresStructure) {
@@ -181,25 +187,8 @@ class DailyReportService
         $lightToolRows    = $this->normalizeLightToolRows($payload);
         $realizationText  = $this->buildRealizationSummary($realizationItems, (string) ($payload['realizationSummary'] ?? ''));
         $lightToolText    = $this->buildLightToolSummary($lightToolRows, (string) ($payload['lightToolSummary'] ?? ''));
-        $uploadedPhotos = $this->filterPhotoInputs($files['photos'] ?? []);
-
         if ($uploadedPhotos === [] && $existingPhotos === []) {
             return ['success' => false, 'errors' => ['photos' => 'Minimal satu foto dokumentasi wajib diunggah.']];
-        }
-
-        foreach ($uploadedPhotos as $photo) {
-            if (! $photo->isValid()) {
-                return ['success' => false, 'errors' => ['photos' => 'Salah satu file foto tidak valid.']];
-            }
-
-            $extension = strtolower((string) $photo->getClientExtension());
-            if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                return ['success' => false, 'errors' => ['photos' => 'Format foto hanya boleh JPG, JPEG, PNG, atau WEBP.']];
-            }
-
-            if (($photo->getSizeByUnit('kb') ?? 0) > 5120) {
-                return ['success' => false, 'errors' => ['photos' => 'Ukuran setiap foto maksimal 5 MB.']];
-            }
         }
 
         $db = Database::connect();
@@ -320,18 +309,7 @@ class DailyReportService
             ]);
         }
 
-        foreach ($uploadedPhotos as $index => $photo) {
-            $stored = $this->storePhoto($photo);
-            $this->reportPhotoModel->insert([
-                'daily_report_id' => $reportId,
-                'file_name'       => $stored['fileName'],
-                'file_path'       => $stored['filePath'],
-                'mime_type'       => $stored['mimeType'],
-                'file_size'       => $stored['fileSize'],
-                'sort_order'      => count($existingPhotos) + $index + 1,
-                'created_at'      => date('Y-m-d H:i:s'),
-            ]);
-        }
+        $this->storePhotosForReport($reportId, $uploadedPhotos, count($existingPhotos));
 
         $db->transComplete();
 
@@ -411,7 +389,7 @@ class DailyReportService
         return [
             'report'         => $report,
             'worker'         => $worker ?? ['full_name' => $report['worker_name']],
-            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => '', 'area_label' => '', 'reason' => ''],
+            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => '', 'area_code' => '', 'area_label' => '', 'reason' => ''],
             'material'       => $db->table('ReportMaterialSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'tool'           => $db->table('ReportToolSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'obstacle'       => $db->table('ReportObstacleSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['obstacle_shape' => '', 'obstacle_cause' => '', 'obstacle_impact' => '', 'additional_note' => ''],
@@ -463,7 +441,7 @@ class DailyReportService
 
         return [
             'report'         => $report ?? [],
-            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => ''],
+            'location'       => $db->table('ReportLocations')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['current_location' => '', 'structure_location' => '', 'structure_point' => '', 'area_code' => ''],
             'material'       => $db->table('ReportMaterialSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'tool'           => $db->table('ReportToolSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['summary_text' => ''],
             'obstacle'       => $db->table('ReportObstacleSummaries')->where('daily_report_id', $reportId)->get()->getRowArray() ?? ['obstacle_shape' => ''],
@@ -683,6 +661,10 @@ class DailyReportService
             'winch' => 'Winch',
             'guide-beam' => 'Guide Beam',
             'trafo-las' => 'Trafo Las',
+            'bar-bender' => 'Bar Bender',
+            'bar-cutter' => 'Bar Cutter',
+            'gerinda' => 'Gerinda',
+            'alat-surveying' => 'Alat Surveying (per Set)',
         ];
         $dropdownLabels = [
             'core-barrel' => 'Core Barrel',
@@ -785,6 +767,140 @@ class DailyReportService
         }
 
         return $photos;
+    }
+
+    private function validateUploadedPhotos(array $uploadedPhotos): ?string
+    {
+        foreach ($uploadedPhotos as $photo) {
+            if (! $photo->isValid()) {
+                return 'Salah satu file foto tidak valid.';
+            }
+
+            $extension = strtolower((string) $photo->getClientExtension());
+            if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+                return 'Format foto hanya boleh JPG, JPEG, PNG, atau WEBP.';
+            }
+
+            if (($photo->getSizeByUnit('kb') ?? 0) > 5120) {
+                return 'Ukuran setiap foto maksimal 5 MB.';
+            }
+        }
+
+        return null;
+    }
+
+    private function failAndPreservePhotos(array $errors, array $payload, array $uploadedPhotos, array $actor): array
+    {
+        $result = ['success' => false, 'errors' => $errors];
+        $reportId = $this->preserveUploadedPhotosForFailedSubmission($payload, $uploadedPhotos, $actor);
+
+        if ($reportId !== null) {
+            $result['reportId'] = $reportId;
+        }
+
+        return $result;
+    }
+
+    private function preserveUploadedPhotosForFailedSubmission(array $payload, array $uploadedPhotos, array $actor): ?int
+    {
+        if ($uploadedPhotos === []) {
+            return null;
+        }
+
+        try {
+            $reportId = (int) ($payload['reportId'] ?? 0);
+            $existingPhotos = [];
+
+            if ($reportId > 0) {
+                $existing = $this->getReportBundle($reportId);
+                if ($existing === null || ! $this->authService->canManageReport($actor, $existing['report'])) {
+                    return null;
+                }
+
+                $existingPhotos = $existing['photos'] ?? [];
+            } else {
+                $reportDate = $this->resolveDraftReportDate($payload);
+                $workerUserId = $this->resolveDraftWorkerUserId($payload, $actor);
+
+                $matchedReport = $this->dailyReportModel
+                    ->where('report_date', $reportDate)
+                    ->where('worker_user_id', $workerUserId)
+                    ->first();
+
+                if ($matchedReport !== null) {
+                    $matchedBundle = $this->getReportBundle((int) $matchedReport['id']);
+
+                    if ($matchedBundle === null || ! $this->authService->canManageReport($actor, $matchedBundle['report'])) {
+                        return null;
+                    }
+
+                    $reportId = (int) $matchedReport['id'];
+                    $existingPhotos = $matchedBundle['photos'] ?? [];
+                } else {
+                    $reportId = (int) $this->dailyReportModel->insert([
+                        'report_code'         => $this->generateReportCode(),
+                        'report_date'         => $reportDate,
+                        'worker_user_id'      => $workerUserId,
+                        'created_by_user_id'  => (int) $actor['id'],
+                        'weather_code'        => $this->resolveDraftWeatherCode($payload),
+                        'realization_summary' => trim((string) ($payload['realizationSummary'] ?? '')),
+                        'status'              => 'Draft',
+                    ], true);
+                }
+            }
+
+            if ($reportId <= 0) {
+                return null;
+            }
+
+            $this->storePhotosForReport($reportId, $uploadedPhotos, count($existingPhotos));
+
+            return $reportId;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resolveDraftReportDate(array $payload): string
+    {
+        $reportDate = trim((string) ($payload['reportDate'] ?? ''));
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $reportDate);
+
+        if ($date !== false && $date->format('Y-m-d') === $reportDate) {
+            return $reportDate;
+        }
+
+        return date('Y-m-d');
+    }
+
+    private function resolveDraftWorkerUserId(array $payload, array $actor): int
+    {
+        $workerUserId = (int) ($payload['workerUserId'] ?? 0);
+
+        return $workerUserId > 0 ? $workerUserId : (int) $actor['id'];
+    }
+
+    private function resolveDraftWeatherCode(array $payload): string
+    {
+        $weatherCode = trim((string) ($payload['weatherCode'] ?? ''));
+
+        return in_array($weatherCode, ['Cerah', 'Mendung', 'Gerimis', 'Hujan', 'Badai'], true) ? $weatherCode : 'Cerah';
+    }
+
+    private function storePhotosForReport(int $reportId, array $uploadedPhotos, int $existingCount): void
+    {
+        foreach ($uploadedPhotos as $index => $photo) {
+            $stored = $this->storePhoto($photo);
+            $this->reportPhotoModel->insert([
+                'daily_report_id' => $reportId,
+                'file_name'       => $stored['fileName'],
+                'file_path'       => $stored['filePath'],
+                'mime_type'       => $stored['mimeType'],
+                'file_size'       => $stored['fileSize'],
+                'sort_order'      => $existingCount + $index + 1,
+                'created_at'      => date('Y-m-d H:i:s'),
+            ]);
+        }
     }
 
     private function storePhoto(UploadedFile $photo): array

@@ -57,6 +57,10 @@ $lightCounterOptions = [
     'winch' => 'Winch',
     'guide-beam' => 'Guide Beam',
     'trafo-las' => 'Trafo Las',
+    'bar-bender' => 'Bar Bender',
+    'bar-cutter' => 'Bar Cutter',
+    'gerinda' => 'Gerinda',
+    'alat-surveying' => 'Alat Surveying (per Set)',
 ];
 $lightDropdownOptions = [
     'core-barrel' => [
@@ -185,10 +189,14 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         gap: 12px;
     }
 
-    @media (min-width: 720px) {
-        .LightToolMultiGrid {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
+    .LightToolMultiGrid .BoxedCounterField select {
+        padding: 8px 9px;
+        font-size: 13px;
+        min-height: 38px;
+    }
+
+    .LightToolMultiGrid .BoxedCounterField span {
+        font-size: 12px;
     }
 
     .StickyActionBar.isWizard {
@@ -249,6 +257,14 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         font-weight: 600;
     }
 
+    .AccordionGroupHint {
+        margin: -6px 0 4px;
+        font-size: 11px;
+        line-height: 1.35;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
 </style>
 
 <?= view('Components/PageHeader', [
@@ -257,7 +273,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
     'subtitle' => 'Satu form lengkap untuk seluruh aktivitas pekerjaan harian lapangan.',
 ]) ?>
 
-<form method="post" action="<?= base_url('reports/save-draft') ?>" enctype="multipart/form-data" class="StackForm" id="ReportWizardForm" data-step="<?= esc((string) max(1, min(7, $currentStep))) ?>" data-draft-key="<?= esc('trace-report-draft:' . ($currentUser['id'] ?? 'guest') . ':' . ($formData['reportId'] ?? 'new')) ?>">
+<form method="post" action="<?= base_url('reports/save-draft') ?>" enctype="multipart/form-data" class="StackForm" id="ReportWizardForm" data-step="<?= esc((string) max(1, min(7, $currentStep))) ?>" data-draft-key="<?= esc('trace-report-draft:' . ($currentUser['id'] ?? 'guest') . ':' . ($formData['reportId'] ?? 'new')) ?>" novalidate>
     <?= csrf_field() ?>
     <input type="hidden" name="reportId" value="<?= esc((string) ($formData['reportId'] ?? '')) ?>">
     <input type="hidden" name="currentStep" id="CurrentStepInput" value="<?= esc((string) max(1, min(7, $currentStep))) ?>">
@@ -281,13 +297,13 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
             <label class="FieldBlock">
                 <span>Tanggal Laporan</span>
                 <small class="RequiredHint">wajib diisi</small>
-                <input type="date" name="reportDate" value="<?= esc(old('reportDate', $formData['reportDate'] ?? '')) ?>" required>
+                <input type="date" name="reportDate" value="<?= esc(old('reportDate', $formData['reportDate'] ?? '')) ?>">
             </label>
 
             <label class="FieldBlock">
                 <span>Supervisor / Pelaksana</span>
                 <small class="RequiredHint">wajib diisi</small>
-                <select name="workerUserId" required>
+                <select name="workerUserId">
                     <option value="">Pilih user</option>
                     <?php foreach ($formOptions['workerUsers'] as $user) : ?>
                         <option value="<?= esc((string) $user['id']) ?>" <?= (string) old('workerUserId', $formData['workerUserId'] ?? '') === (string) $user['id'] ? 'selected' : '' ?>>
@@ -319,7 +335,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         <label class="FieldBlock">
             <span>Lokasi Terkini</span>
             <small class="RequiredHint">wajib diisi</small>
-            <select name="currentLocation" id="CurrentLocationSelect" required>
+            <select name="currentLocation" id="CurrentLocationSelect">
                 <option value="">Pilih lokasi terkini</option>
                 <?php foreach ($currentLocationOptions as $locationOption) : ?>
                     <option value="<?= esc($locationOption) ?>" <?= $currentLocationSelectValue === $locationOption ? 'selected' : '' ?>>
@@ -376,7 +392,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
         <div class="WeatherOptions">
             <?php foreach ($formOptions['weatherOptions'] as $weather) : ?>
                 <label class="ChoiceChip">
-                    <input type="radio" name="weatherCode" value="<?= esc($weather) ?>" <?= old('weatherCode', $formData['weatherCode'] ?? '') === $weather ? 'checked' : '' ?> required>
+                    <input type="radio" name="weatherCode" value="<?= esc($weather) ?>" <?= old('weatherCode', $formData['weatherCode'] ?? '') === $weather ? 'checked' : '' ?>>
                     <span><?= esc($weather) ?></span>
                 </label>
             <?php endforeach; ?>
@@ -619,6 +635,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
 
         <div class="DynamicRows" data-dynamic-rows="lightTools">
             <p class="AccordionGroupTitle">Alat Ringan Lainnya</p>
+            <p class="AccordionGroupHint">Tulis Disini Jika Tidak Ada Pilihan Diatas</p>
             <?php foreach ($lightTools as $index => $item) : ?>
                 <div class="DynamicRow isThreeColumn" data-dynamic-row>
                     <label class="FieldBlock">

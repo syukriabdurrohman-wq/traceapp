@@ -60,7 +60,7 @@ class Validation extends BaseConfig
         'workerUserId'       => 'required|is_natural_no_zero',
         'currentLocation'    => 'required|min_length[5]|max_length[255]',
         'currentLocationManual' => 'permit_empty|min_length[3]|max_length[255]',
-        'structureLocation'  => 'permit_empty|in_list[PL1,PL2,P23,P24,P25,P26,P27,P28,P29,P30,P32,P33,P34,Fender PL1,Fender PL2,Fender P22,Fender P23]',
+        'structureLocation'  => 'permit_empty|in_list[PL1,PL2,P22,P23,P24,P25,P26,P27,P28,P29,P30,P31,P32,P33,P34,Fender PL1,Fender PL2,Fender P22,Fender P23]',
         'structurePoint'     => 'permit_empty|min_length[1]|max_length[120]',
         'areaCode'           => 'required|in_list[AreaLanal,AreaSwangi,AreaRpi,AreaLaut,Lainnya]',
         'weatherCode'        => 'required|in_list[Cerah,Mendung,Gerimis,Hujan,Badai]',
