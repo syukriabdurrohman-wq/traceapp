@@ -48,9 +48,9 @@ $workItemAliases = [
 ];
 $partnerOptions = ['RPI', 'Berdikari'];
 $heavyDropdownOptions = [
-    'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
-    'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC 800', 'Hitachi 275 DC'],
+    'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carrier', 'Bayu Bahtera'],
     'boring-machine' => ['SR 405', 'SR 215', 'SR 265', 'XR 280'],
+    'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC800', 'Hitachi 275 DC'],
 ];
 $lightCounterOptions = [
     'genset' => 'Genset',
@@ -560,6 +560,7 @@ $lightTools = $lightTools !== [] ? $lightTools : [['tool_label' => '', 'volume' 
 
         <div class="DynamicRows" data-dynamic-rows="heavyCustomRows">
             <p class="AccordionGroupTitle">Alat Berat Tambahan</p>
+            <p class="AccordionGroupHint">Tulis Disini Jika Tidak Ada Pilihan Diatas</p>
             <?php foreach ($heavyCustomRows as $index => $item) : ?>
                 <div class="DynamicRow isTwoColumn" data-dynamic-row>
                     <label class="FieldBlock">

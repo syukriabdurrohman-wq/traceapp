@@ -39,6 +39,9 @@ class DailyReportService
             $this->workerCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll()
         );
 
+        $heavyCategories = $this->heavyEquipmentCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll();
+        $heavyCategories = $this->sortHeavyEquipmentCategories($heavyCategories);
+
         return [
             'areas' => [
                 ['code' => 'AreaLanal', 'label' => 'Area Lanal'],
@@ -72,8 +75,32 @@ class DailyReportService
             'weatherOptions' => ['Cerah', 'Mendung', 'Gerimis', 'Hujan', 'Badai'],
             'workerUsers'    => $this->userModel->getActiveReportUsers(),
             'workerCategories' => $workerCategories,
-            'heavyCategories'  => $this->heavyEquipmentCategoryModel->where('is_active', 1)->orderBy('sort_order', 'ASC')->findAll(),
+            'heavyCategories'  => $heavyCategories,
         ];
+    }
+
+    private function sortHeavyEquipmentCategories(array $categories): array
+    {
+        $order = [
+            'tongkang' => 1,
+            'boring-machine' => 2,
+            'crane' => 3,
+            'vibro-hammer' => 4,
+            'truck-mixer' => 5,
+            'excavator' => 6,
+            'loader' => 7,
+            'dump-truck' => 8,
+        ];
+
+        usort($categories, static function (array $left, array $right) use ($order): int {
+            $leftSlug = (string) ($left['slug'] ?? '');
+            $rightSlug = (string) ($right['slug'] ?? '');
+
+            return ($order[$leftSlug] ?? 99) <=> ($order[$rightSlug] ?? 99)
+                ?: ((int) ($left['sort_order'] ?? 0) <=> (int) ($right['sort_order'] ?? 0));
+        });
+
+        return $categories;
     }
 
     private function normalizeWorkerCategoryName(string $name): string
@@ -575,9 +602,9 @@ class DailyReportService
     private function heavyEquipmentDropdownOptions(): array
     {
         return [
-            'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carier', 'Berdikari-1'],
-            'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC 800', 'Hitachi 275 DC'],
+            'tongkang' => ['Palmindo', 'PCF-1861', 'PCF-1865', 'Aquaria', 'BDU', 'Pipe Carrier', 'Bayu Bahtera'],
             'boring-machine' => ['SR 405', 'SR 215', 'SR 265', 'XR 280'],
+            'crane' => ['Kobelco 7150', 'QUY 150', 'LS 248 RH', 'BM 800 HD', 'SC800', 'Hitachi 275 DC'],
         ];
     }
 

@@ -169,14 +169,63 @@
             return;
         }
 
-        input.addEventListener('change', () => {
+        let selectedFiles = [];
+        let previewUrls = [];
+
+        const syncInputFiles = () => {
+            if (typeof DataTransfer === 'undefined') {
+                if (selectedFiles.length === 0) {
+                    input.value = '';
+                }
+                return;
+            }
+
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach((file) => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
+        };
+
+        const clearPreviewUrls = () => {
+            previewUrls.forEach((url) => URL.revokeObjectURL(url));
+            previewUrls = [];
+        };
+
+        const renderPreview = () => {
+            clearPreviewUrls();
             preview.innerHTML = '';
-            Array.from(input.files || []).forEach((file) => {
+
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'PhotoPreviewItem';
+
                 const image = document.createElement('img');
-                image.src = URL.createObjectURL(file);
+                const imageUrl = URL.createObjectURL(file);
+                previewUrls.push(imageUrl);
+
+                image.src = imageUrl;
                 image.alt = file.name;
-                preview.appendChild(image);
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'PhotoPreviewRemove';
+                removeButton.setAttribute('aria-label', `Hapus foto ${file.name}`);
+                removeButton.setAttribute('title', 'Hapus foto');
+                removeButton.textContent = 'x';
+                removeButton.addEventListener('click', () => {
+                    selectedFiles.splice(index, 1);
+                    syncInputFiles();
+                    renderPreview();
+                });
+
+                item.appendChild(image);
+                item.appendChild(removeButton);
+                preview.appendChild(item);
             });
+        };
+
+        input.addEventListener('change', () => {
+            selectedFiles = Array.from(input.files || []);
+            renderPreview();
         });
     };
 

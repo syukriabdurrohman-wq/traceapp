@@ -33,13 +33,13 @@ class UpdateHeavyEquipmentCategories extends Migration
         );
 
         $this->upsertCategory('Tongkang', 'tongkang', 1, 1);
-        $this->upsertCategory('Crane Service', 'crane', 2, 1);
-        $this->upsertCategory('Boring Machine', 'boring-machine', 3, 1);
-        $this->upsertCategory('Dump Truck', 'dump-truck', 4, 1);
-        $this->upsertCategory('Excavator', 'excavator', 5, 1);
-        $this->upsertCategory('Loader', 'loader', 6, 1);
-        $this->upsertCategory('Vibro Hammer', 'vibro-hammer', 7, 1);
-        $this->upsertCategory('Truck Mixer', 'truck-mixer', 8, 1);
+        $this->upsertCategory('Boring Machine', 'boring-machine', 2, 1);
+        $this->upsertCategory('Crane Service', 'crane', 3, 1);
+        $this->upsertCategory('Vibro Hammer', 'vibro-hammer', 4, 1);
+        $this->upsertCategory('Truck Mixer', 'truck-mixer', 5, 1);
+        $this->upsertCategory('Excavator', 'excavator', 6, 1);
+        $this->upsertCategory('Loader', 'loader', 7, 1);
+        $this->upsertCategory('Dump Truck', 'dump-truck', 8, 1);
 
         $this->deactivateCategory('bulldozer', 90);
         $this->deactivateCategory('vibroroller', 91);
